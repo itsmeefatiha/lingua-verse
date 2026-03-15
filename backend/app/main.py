@@ -1,11 +1,11 @@
 from fastapi import FastAPI
+from app.api.v1.api import api_router
+from app.db.session import engine
+from app.db.base import Base
 
-app = FastAPI(
-    title="Lingua Verse API",
-    description="API asynchrone pour l'apprentissage des langues avec support AR.",
-    version="1.0.0"
-)
+app = FastAPI(title="LinguaVerse API")
 
-@app.get("/")
-async def root():
-    return {"message": "Bienvenue sur l'API de Lingua Verse !"}
+Base.metadata.create_all(bind=engine)
+
+app.include_router(api_router, prefix="/api/v1")
+
