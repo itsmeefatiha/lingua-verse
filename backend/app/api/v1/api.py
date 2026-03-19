@@ -1,7 +1,7 @@
-# app/api/v1/api.py
 from fastapi import APIRouter
-from .endpoints import auth, lessons
+from .endpoints import auth, users
 
 api_router = APIRouter()
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(lessons.router, prefix="/lessons", tags=["lessons"])
+
+api_router.include_router(auth.router, prefix="/auth", tags=["Authentification"])
+api_router.include_router(users.router, prefix="/users", tags=["Utilisateurs"])
