@@ -1,11 +1,18 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Enum
 from datetime import datetime, timezone
 import enum
 from app.db.base import Base
 
 class RoleEnum(str, enum.Enum):
+    ADMIN = "admin"
     STUDENT = "student"
     TEACHER = "teacher"
+
+
+class LeagueEnum(str, enum.Enum):
+    BRONZE = "bronze"
+    ARGENT = "argent"
+    OR = "or"
 
 class User(Base):
     __tablename__ = "users"
@@ -26,6 +33,14 @@ class User(Base):
 
     # RBAC
     role = Column(Enum(RoleEnum), default=RoleEnum.STUDENT)
+
+    # Gamification
+    total_xp = Column(Integer, default=0, nullable=False)
+    current_level = Column(Integer, default=1, nullable=False)
+    weekly_xp = Column(Integer, default=0, nullable=False)
+    current_league = Column(Enum(LeagueEnum), default=LeagueEnum.BRONZE, nullable=False)
+    streak_count = Column(Integer, default=0, nullable=False)
+    last_activity_date = Column(Date, nullable=True)
 
     # Statut & OTP
     is_active = Column(Boolean, default=False)
