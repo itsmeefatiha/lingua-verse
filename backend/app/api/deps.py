@@ -22,6 +22,8 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
 
 def require_role(required_role: RoleEnum):
     def role_checker(current_user: User = Depends(get_current_user)):
+        if current_user.role == RoleEnum.ADMIN:
+            return current_user
         if current_user.role != required_role and current_user.role != RoleEnum.TEACHER:
             raise HTTPException(status_code=403, detail="Privilèges insuffisants")
         return current_user

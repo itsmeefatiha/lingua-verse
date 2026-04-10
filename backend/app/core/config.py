@@ -30,6 +30,15 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: Optional[str] = None
     GITHUB_CLIENT_SECRET: Optional[str] = None
 
+    # TTS / Audio generation
+    TTS_ENGINE: str = "mock"  # mock | gtts
+    TTS_DEFAULT_LANG: str = "en"
+    TTS_STORAGE_BASE_URL: str = "https://storage.linguaverse.local/audio"
+    TTS_OUTPUT_DIR: str = "generated_audio"
+
+    # STT / Speech-to-Text
+    STT_ENGINE: str = "simulated"  # simulated | whisper | speechrecognition
+
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         """

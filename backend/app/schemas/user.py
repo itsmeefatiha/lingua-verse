@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 import re
-from app.models.user import RoleEnum
+from datetime import date
+from app.models.user import RoleEnum, LeagueEnum
 
 # Inscription classique
 class UserCreate(BaseModel):
@@ -52,6 +53,12 @@ class UserResponse(BaseModel):
     source_language: str
     target_language: str
     is_active: bool
+    total_xp: int
+    current_level: int
+    weekly_xp: int
+    current_league: LeagueEnum
+    streak_count: int
+    last_activity_date: Optional[date]
 
     model_config = {"from_attributes": True}
 
