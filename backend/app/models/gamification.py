@@ -23,7 +23,14 @@ class XPTransaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     amount = Column(Integer, nullable=False)
-    source_type = Column(Enum(XPSourceTypeEnum), nullable=False)
+    source_type = Column(
+        Enum(
+            XPSourceTypeEnum,
+            name="xpsourcetypeenum",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+    )
     source_ref = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 

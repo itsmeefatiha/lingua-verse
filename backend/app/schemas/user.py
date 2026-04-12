@@ -49,6 +49,7 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
     full_name: Optional[str]
+    avatar_url: Optional[str]
     role: RoleEnum
     source_language: str
     target_language: str
@@ -61,6 +62,31 @@ class UserResponse(BaseModel):
     last_activity_date: Optional[date]
 
     model_config = {"from_attributes": True}
+
+
+class AdminTopUserStat(BaseModel):
+    user_id: int
+    full_name: Optional[str]
+    email: EmailStr
+    total_xp: int
+    current_level: int
+    streak_count: int
+    current_league: LeagueEnum
+
+
+class AdminDashboardStatsResponse(BaseModel):
+    total_users: int
+    active_users: int
+    inactive_users: int
+    admin_users: int
+    teacher_users: int
+    student_users: int
+    total_xp_distributed: int
+    average_xp: float
+    bronze_users: int
+    argent_users: int
+    or_users: int
+    top_users: list[AdminTopUserStat]
 
 # Réinitialisation Mot de passe
 class PasswordResetRequest(BaseModel):

@@ -1,7 +1,8 @@
 import logging
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta, timezone
-from app.models.user import User
+from app.models.user import User, RoleEnum, LeagueEnum
 from app.schemas.user import UserCreate, UserProfileUpdate
 from app.core.security import get_password_hash, generate_otp, verify_password
 
@@ -98,3 +99,59 @@ def reset_password_with_otp(db: Session, email: str, otp_code: str, new_password
     user.otp_expiry = None
     db.commit()
     return True
+
+
+def get_admin_dashboard_stats(db: Session) -> dict:
+    total_users = db.query(func.count(User.id)).scalar() or 0
+    active_users = db.query(func.count(User.id)).filter(User.is_active.is_(True)).scalar() or 0
+    inactive_users = total_users - active_users
+
+    admin_users = db.query(func.count(User.id)).filter(User.role == RoleEnum.ADMIN).scalar() or 0
+    teacher_users = db.query(func.count(User.id)).filter(User.role == RoleEnum.TEACHER).scalar() or 0
+    student_users = db.query(func.count(User.id)).filter(User.role == RoleEnum.STUDENT).scalar() or 0
+
+    total_xp_distributed = db.query(func.coalesce(func.sum(User.total_xp), 0)).scalar() or 0
+    average_xp = float(db.query(func.coalesce(func.avg(User.total_xp), 0)).scalar() or 0)
+
+    bronze_users = (
+        db.query(func.count(User.id)).filter(User.current_league == LeagueEnum.BRONZE).scalar() or 0
+    )
+    argent_users = (
+        db.query(func.count(User.id)).filter(User.current_league == LeagueEnum.ARGENT).scalar() or 0
+    )
+    or_users = db.query(func.count(User.id)).filter(User.current_league == LeagueEnum.OR).scalar() or 0
+
+    top_users_query = (
+        db.query(User)
+        .order_by(User.total_xp.desc(), User.current_level.desc(), User.streak_count.desc())
+        .limit(10)
+        .all()
+    )
+
+    top_users = [
+        {
+            "user_id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "total_xp": user.total_xp,
+            "current_level": user.current_level,
+            "streak_count": user.streak_count,
+            "current_league": user.current_league,
+        }
+        for user in top_users_query
+    ]
+
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "inactive_users": inactive_users,
+        "admin_users": admin_users,
+        "teacher_users": teacher_users,
+        "student_users": student_users,
+        "total_xp_distributed": int(total_xp_distributed),
+        "average_xp": average_xp,
+        "bronze_users": bronze_users,
+        "argent_users": argent_users,
+        "or_users": or_users,
+        "top_users": top_users,
+    }
