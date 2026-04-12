@@ -36,7 +36,15 @@ class UserLessonProgress(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     lesson_id = Column(Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False, index=True)
-    status = Column(Enum(ProgressStatusEnum), nullable=False, default=ProgressStatusEnum.IN_PROGRESS)
+    status = Column(
+        Enum(
+            ProgressStatusEnum,
+            name="progressstatusenum",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+        default=ProgressStatusEnum.IN_PROGRESS,
+    )
     last_score = Column(Integer, nullable=True)
     last_activity_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 

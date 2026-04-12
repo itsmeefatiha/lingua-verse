@@ -38,7 +38,15 @@ class User(Base):
     total_xp = Column(Integer, default=0, nullable=False)
     current_level = Column(Integer, default=1, nullable=False)
     weekly_xp = Column(Integer, default=0, nullable=False)
-    current_league = Column(Enum(LeagueEnum), default=LeagueEnum.BRONZE, nullable=False)
+    current_league = Column(
+        Enum(
+            LeagueEnum,
+            name="leagueenum",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        default=LeagueEnum.BRONZE,
+        nullable=False,
+    )
     streak_count = Column(Integer, default=0, nullable=False)
     last_activity_date = Column(Date, nullable=True)
 
