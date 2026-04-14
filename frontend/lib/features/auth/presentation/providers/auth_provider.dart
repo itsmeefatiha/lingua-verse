@@ -21,6 +21,13 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   UserProfileModel? get user => _user;
+  bool get needsLanguageSelection {
+    final current = _user;
+    if (current == null) {
+      return false;
+    }
+    return current.targetLanguage.trim().isEmpty;
+  }
 
   Future<void> login({required String email, required String password}) async {
     _isLoading = true;

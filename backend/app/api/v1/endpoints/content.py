@@ -6,9 +6,11 @@ from app.db.database import get_db
 from app.models.content import CEFRLevelEnum, Level
 from app.models.user import RoleEnum, User
 from app.schemas.content import (
+    LanguageResponse,
     LessonCreate,
     LessonResponse,
     LessonUpdate,
+    LevelByLanguageResponse,
     LevelResponse,
     VocabularyCreate,
     VocabularyResponse,
@@ -30,9 +32,52 @@ def list_levels(db: Session = Depends(get_db)):
     return content_service.list_levels(db)
 
 
+@router.get("/languages", response_model=list[LanguageResponse])
+def list_languages(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    return content_service.list_supported_languages(db)
+
+
+@router.get("/languages/{language_code}/levels", response_model=list[LevelByLanguageResponse])
+def list_levels_by_language(
+    language_code: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return content_service.list_levels_for_language(
+            db,
+            language_code=language_code,
+            user_id=current_user.id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
 @router.get("/levels/{level_code}/lessons", response_model=list[LessonResponse])
-def list_lessons_by_level(level_code: CEFRLevelEnum, db: Session = Depends(get_db)):
-    return content_service.list_lessons_by_level_code(db, level_code)
+def list_lessons_by_level(
+    level_code: CEFRLevelEnum,
+    language_code: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    resolved_language = language_code or current_user.target_language
+    return content_service.list_lessons_by_level_code_and_language(
+        db,
+        level_code=level_code,
+        language_code=resolved_language,
+    )
+
+
+@router.get("/levels/id/{level_id}/lessons", response_model=list[LessonResponse])
+def list_lessons_by_level_id(
+    level_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    return content_service.list_lessons_by_level_id(db, level_id)
 
 
 @router.post("/lessons", response_model=LessonResponse, status_code=status.HTTP_201_CREATED)

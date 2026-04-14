@@ -21,6 +21,7 @@ class Question(Base):
     text = Column(Text, nullable=False)
     question_type = Column(Enum(QuestionTypeEnum), nullable=False)
     correct_answer = Column(Text, nullable=False)
+    choices = Column(JSON, nullable=True)
     grammatical_explanation = Column(Text, nullable=True)
     lesson_id = Column(Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False, index=True)
     vocabulary_id = Column(Integer, ForeignKey("vocabularies.id", ondelete="SET NULL"), nullable=True, index=True)

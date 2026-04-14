@@ -18,7 +18,7 @@ class QuizQuestionModel {
   final String explanation;
 
   factory QuizQuestionModel.fromApi(Map<String, dynamic> json) {
-    final typeValue = (json['question_type'] as String? ?? 'multiple_choice');
+    final typeValue = (json['question_type'] as String? ?? 'qcm');
     return QuizQuestionModel(
       id: json['id'] as int,
       type: _fromApiType(typeValue),
@@ -30,10 +30,12 @@ class QuizQuestionModel {
   }
 
   static List<String> _buildChoices(Map<String, dynamic> json) {
+    // First check if choices are directly provided
     final direct = json['choices'];
     if (direct is List<dynamic>) {
       return direct.map((item) => item.toString()).toList();
     }
+    // Fallback: extract from text
     final text = json['text'] as String? ?? '';
     final matches = RegExp(r'\[(.*?)\]').allMatches(text);
     return matches.map((m) => m.group(1) ?? '').where((v) => v.isNotEmpty).toList();

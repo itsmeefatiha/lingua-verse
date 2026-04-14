@@ -11,6 +11,7 @@ class QuestionBase(BaseModel):
     text: str = Field(min_length=1)
     question_type: QuestionTypeEnum
     correct_answer: str = Field(min_length=1)
+    choices: Optional[list[str]] = None
     grammatical_explanation: Optional[str] = None
     lesson_id: int
     vocabulary_id: Optional[int] = None
@@ -25,6 +26,7 @@ class QuestionUpdate(BaseModel):
     text: Optional[str] = Field(default=None, min_length=1)
     question_type: Optional[QuestionTypeEnum] = None
     correct_answer: Optional[str] = Field(default=None, min_length=1)
+    choices: Optional[list[str]] = None
     grammatical_explanation: Optional[str] = None
     lesson_id: Optional[int] = None
     vocabulary_id: Optional[int] = None
@@ -36,6 +38,7 @@ class QuestionResponse(BaseModel):
     text: str
     question_type: QuestionTypeEnum
     correct_answer: str
+    choices: Optional[list[str]]
     grammatical_explanation: Optional[str]
     lesson_id: int
     vocabulary_id: Optional[int]
@@ -48,6 +51,8 @@ class QuestionPublicResponse(BaseModel):
     id: int
     text: str
     question_type: QuestionTypeEnum
+    correct_answer: str
+    choices: Optional[list[str]]
     grammatical_explanation: Optional[str]
     lesson_id: int
     vocabulary_id: Optional[int]
@@ -58,6 +63,7 @@ class QuestionPublicResponse(BaseModel):
 
 class QuizGenerateRequest(BaseModel):
     level_code: Optional[CEFRLevelEnum] = None
+    language_code: Optional[str] = None
     question_count: int = Field(default=10, ge=1, le=30)
 
 
@@ -68,6 +74,7 @@ class QuizAnswerInput(BaseModel):
 
 class QuizSubmitRequest(BaseModel):
     level_code: Optional[CEFRLevelEnum] = None
+    language_code: Optional[str] = None
     duration_seconds: Optional[int] = Field(default=None, ge=0)
     answers: list[QuizAnswerInput] = Field(min_length=1)
 
