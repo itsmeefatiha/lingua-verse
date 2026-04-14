@@ -1,12 +1,109 @@
 from sqlalchemy.orm import Session
 
-from app.models.content import CEFRLevelEnum, Level, Lesson, Vocabulary
+from app.models.content import CEFRLevelEnum, Language, Level, Lesson, Vocabulary
+from app.models.progress import ProgressStatusEnum, UserLessonProgress
+from app.models.quiz import QuizAttempt
 from app.schemas.content import LessonCreate, LessonUpdate, VocabularyCreate, VocabularyUpdate
 from app.services import tts_service
 
 
 def list_levels(db: Session) -> list[Level]:
     return db.query(Level).order_by(Level.display_order.asc()).all()
+
+
+def list_supported_languages(db: Session) -> list[dict]:
+    return [
+        {
+            "id": language.id,
+            "name": language.name,
+            "code": language.code,
+        }
+        for language in db.query(Language).order_by(Language.name.asc()).all()
+    ]
+
+
+def get_supported_language(db: Session, code: str) -> Language | None:
+    normalized = code.strip().lower()
+    return db.query(Language).filter(Language.code == normalized).first()
+
+
+def list_levels_for_language(
+    db: Session,
+    *,
+    language_code: str,
+    user_id: int,
+) -> list[dict]:
+    language = get_supported_language(db, language_code)
+    if language is None:
+        raise ValueError("Langue cible non supportee")
+
+    levels = (
+        db.query(Level)
+        .filter(Level.language_id == language.id)
+        .order_by(Level.display_order.asc(), Level.id.asc())
+        .all()
+    )
+    passed_codes = {
+        (attempt.level_code or "").upper()
+        for attempt in (
+            db.query(QuizAttempt)
+            .filter(
+                QuizAttempt.user_id == user_id,
+                QuizAttempt.score >= 80,
+                QuizAttempt.level_code.isnot(None),
+                QuizAttempt.language_code == language.code,
+            )
+            .all()
+        )
+        if attempt.level_code
+    }
+
+    payload = []
+    previous_level_completed_and_passed = True
+
+    for level in levels:
+        lessons = (
+            db.query(Lesson)
+            .filter(Lesson.level_id == level.id)
+            .order_by(Lesson.display_order.asc(), Lesson.id.asc())
+            .all()
+        )
+        lesson_ids = [lesson.id for lesson in lessons]
+        total_lessons = len(lesson_ids)
+
+        completed_lessons = 0
+        if lesson_ids:
+            completed_lessons = (
+                db.query(UserLessonProgress)
+                .filter(
+                    UserLessonProgress.user_id == user_id,
+                    UserLessonProgress.lesson_id.in_(lesson_ids),
+                    UserLessonProgress.status == ProgressStatusEnum.COMPLETED,
+                )
+                .count()
+            )
+
+        all_lessons_completed = total_lessons > 0 and completed_lessons == total_lessons
+        code = level.code.value if isinstance(level.code, CEFRLevelEnum) else str(level.code)
+        level_quiz_passed = code.upper() in passed_codes
+
+        is_completed = all_lessons_completed and level_quiz_passed
+        is_locked = not previous_level_completed_and_passed
+
+        payload.append(
+            {
+                "id": level.id,
+                "language_id": language.id,
+                "name": code,
+                "order_index": level.display_order,
+                "is_completed": is_completed,
+                "is_locked": is_locked,
+            }
+        )
+
+        previous_level_completed_and_passed = is_completed
+
+    return payload
 
 
 def get_level_by_code(db: Session, level_code: CEFRLevelEnum) -> Level | None:
@@ -18,6 +115,32 @@ def list_lessons_by_level_code(db: Session, level_code: CEFRLevelEnum) -> list[L
         db.query(Lesson)
         .join(Level, Lesson.level_id == Level.id)
         .filter(Level.code == level_code)
+        .order_by(Lesson.display_order.asc(), Lesson.id.asc())
+        .all()
+    )
+
+
+def list_lessons_by_level_code_and_language(
+    db: Session,
+    *,
+    level_code: CEFRLevelEnum,
+    language_code: str,
+) -> list[Lesson]:
+    normalized = language_code.strip().lower()
+    return (
+        db.query(Lesson)
+        .join(Level, Lesson.level_id == Level.id)
+        .join(Language, Level.language_id == Language.id)
+        .filter(Level.code == level_code, Language.code == normalized)
+        .order_by(Lesson.display_order.asc(), Lesson.id.asc())
+        .all()
+    )
+
+
+def list_lessons_by_level_id(db: Session, level_id: int) -> list[Lesson]:
+    return (
+        db.query(Lesson)
+        .filter(Lesson.level_id == level_id)
         .order_by(Lesson.display_order.asc(), Lesson.id.asc())
         .all()
     )

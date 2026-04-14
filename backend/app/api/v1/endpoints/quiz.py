@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_role
 from app.db.database import get_db
-from app.models.content import Lesson
+from app.models.content import Lesson, Vocabulary
 from app.models.quiz import Question
 from app.models.user import RoleEnum, User
 from app.schemas.quiz import (
@@ -99,12 +99,58 @@ def generate_quiz(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        return quiz_generator.generate_adaptive_quiz(
-            db,
-            user_id=current_user.id,
-            question_count=request.question_count,
-            level_code=request.level_code,
-        )
+        if request.level_code is not None:
+            questions = quiz_generator.generate_level_quiz_questions(
+                db,
+                level_code=request.level_code,
+                language_code=(request.language_code or current_user.target_language).strip().lower(),
+                question_count=request.question_count,
+            )
+        else:
+            questions = quiz_generator.generate_adaptive_quiz(
+                db,
+                user_id=current_user.id,
+                question_count=request.question_count,
+                level_code=request.level_code,
+            )
+
+        vocabulary_ids = {q.vocabulary_id for q in questions if q.vocabulary_id is not None}
+        vocab_terms: dict[int, str] = {}
+        if vocabulary_ids:
+            vocab_rows = (
+                db.query(Vocabulary.id, Vocabulary.term)
+                .filter(Vocabulary.id.in_(vocabulary_ids))
+                .all()
+            )
+            vocab_terms = {v_id: term for v_id, term in vocab_rows}
+
+        response_items: list[QuestionPublicResponse] = []
+        for question in questions:
+            text = question.text
+            if (
+                question.question_type.value == "qcm"
+                and question.vocabulary_id is not None
+                and "highlighted word" in text.lower()
+            ):
+                term = vocab_terms.get(question.vocabulary_id)
+                if term:
+                    text = f'Choose the correct translation for "{term}".'
+
+            response_items.append(
+                QuestionPublicResponse(
+                    id=question.id,
+                    text=text,
+                    question_type=question.question_type,
+                    correct_answer=question.correct_answer,
+                    choices=question.choices,
+                    grammatical_explanation=question.grammatical_explanation,
+                    lesson_id=question.lesson_id,
+                    vocabulary_id=question.vocabulary_id,
+                    concept_id=question.concept_id,
+                )
+            )
+
+        return response_items
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -120,7 +166,7 @@ def submit_quiz_attempt(
         user_id=current_user.id,
         answers=request.answers,
         level_code=request.level_code.value if request.level_code else None,
-        language_code=current_user.target_language,
+        language_code=request.language_code or current_user.target_language,
         duration_seconds=request.duration_seconds,
     )
     return {

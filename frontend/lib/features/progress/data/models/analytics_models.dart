@@ -18,6 +18,35 @@ class ProgressLessonModel {
   }
 }
 
+class ProgressLevelModel {
+  const ProgressLevelModel({
+    required this.levelId,
+    required this.levelName,
+    required this.levelCode,
+    required this.progressPercent,
+    required this.completedLessons,
+    required this.totalLessons,
+  });
+
+  final int levelId;
+  final String levelName;
+  final String levelCode;
+  final double progressPercent;
+  final int completedLessons;
+  final int totalLessons;
+
+  factory ProgressLevelModel.fromApi(Map<String, dynamic> json) {
+    return ProgressLevelModel(
+      levelId: json['level_id'] as int,
+      levelName: json['level_name'] as String? ?? 'Level',
+      levelCode: json['level_code'] as String? ?? '',
+      progressPercent: (json['progress_percent'] as num?)?.toDouble() ?? 0,
+      completedLessons: json['completed_lessons'] as int? ?? 0,
+      totalLessons: json['total_lessons'] as int? ?? 0,
+    );
+  }
+}
+
 class ProgressOverviewModel {
   const ProgressOverviewModel({
     required this.userId,
@@ -25,6 +54,7 @@ class ProgressOverviewModel {
     required this.completedLessons,
     required this.totalLessons,
     required this.lessons,
+    required this.levels,
   });
 
   final int userId;
@@ -32,6 +62,7 @@ class ProgressOverviewModel {
   final int completedLessons;
   final int totalLessons;
   final List<ProgressLessonModel> lessons;
+  final List<ProgressLevelModel> levels;
 
   factory ProgressOverviewModel.fromApi(Map<String, dynamic> json) {
     return ProgressOverviewModel(
@@ -39,8 +70,11 @@ class ProgressOverviewModel {
       overallCompletionPercent: (json['overall_completion_percent'] as num?)?.toDouble() ?? 0,
       completedLessons: json['completed_lessons'] as int? ?? 0,
       totalLessons: json['total_lessons'] as int? ?? 0,
-      lessons: (json['lessons'] as List<dynamic>? ?? [])
+        lessons: (json['lessons'] as List<dynamic>? ?? [])
           .map((item) => ProgressLessonModel.fromApi(item as Map<String, dynamic>))
+          .toList(),
+      levels: (json['levels'] as List<dynamic>? ?? [])
+          .map((item) => ProgressLevelModel.fromApi(item as Map<String, dynamic>))
           .toList(),
     );
   }

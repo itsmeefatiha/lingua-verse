@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.models.content import Lesson, Vocabulary
+from app.models.content import Lesson, Level, Vocabulary
 from app.models.progress import ProgressStatusEnum, UserLessonProgress, UserViewedVocab
 from app.services import gamification_service
 
@@ -143,17 +143,40 @@ def calculate_lesson_progress(db: Session, *, user_id: int, lesson_id: int) -> d
 
 def get_dashboard_overview(db: Session, *, user_id: int) -> dict:
     lessons = db.query(Lesson).order_by(Lesson.display_order.asc(), Lesson.id.asc()).all()
+    levels = db.query(Level).order_by(Level.display_order.asc(), Level.id.asc()).all()
     lesson_payloads = []
+    level_payloads = []
     completed_lessons = 0
+    progress_by_level: dict[int, list[float]] = {level.id: [] for level in levels}
+    completed_by_level: dict[int, int] = {level.id: 0 for level in levels}
 
     for lesson in lessons:
         payload = calculate_lesson_progress(db, user_id=user_id, lesson_id=lesson.id)
         lesson_payloads.append(payload)
         if payload["status"] == ProgressStatusEnum.COMPLETED:
             completed_lessons += 1
+            completed_by_level[lesson.level_id] = completed_by_level.get(lesson.level_id, 0) + 1
+        progress_by_level.setdefault(lesson.level_id, []).append(float(payload["progress_percent"]))
 
-    total_lessons = len(lesson_payloads)
+    total_lessons = len(lessons)
     overall_completion_percent = 0.0 if total_lessons == 0 else round((completed_lessons / total_lessons) * 100, 2)
+
+    lessons_by_level = {level.id: 0 for level in levels}
+    for lesson in lessons:
+        lessons_by_level[lesson.level_id] = lessons_by_level.get(lesson.level_id, 0) + 1
+
+    for level in levels:
+        level_progress_values = progress_by_level.get(level.id, [])
+        level_payloads.append(
+            {
+                "level_id": level.id,
+                "level_name": level.code.value,
+                "level_code": level.code.value,
+                "progress_percent": 0.0 if not level_progress_values else round(sum(level_progress_values) / len(level_progress_values), 2),
+                "completed_lessons": completed_by_level.get(level.id, 0),
+                "total_lessons": lessons_by_level.get(level.id, 0),
+            }
+        )
 
     return {
         "user_id": user_id,
@@ -161,6 +184,7 @@ def get_dashboard_overview(db: Session, *, user_id: int) -> dict:
         "completed_lessons": completed_lessons,
         "total_lessons": total_lessons,
         "lessons": lesson_payloads,
+        "levels": level_payloads,
     }
 
 

@@ -8,9 +8,25 @@ from app.models.content import CEFRLevelEnum
 class LevelResponse(BaseModel):
     id: int
     code: CEFRLevelEnum
+    language_id: int
     display_order: int
 
     model_config = {"from_attributes": True}
+
+
+class LanguageResponse(BaseModel):
+    id: int
+    name: str
+    code: str
+
+
+class LevelByLanguageResponse(BaseModel):
+    id: int
+    language_id: int
+    name: str
+    order_index: int
+    is_completed: bool
+    is_locked: bool
 
 
 class LessonBase(BaseModel):

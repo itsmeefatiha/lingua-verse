@@ -37,6 +37,16 @@ class ProgressOverviewResponse(BaseModel):
     completed_lessons: int
     total_lessons: int
     lessons: list["ProgressLessonDetailResponse"]
+    levels: list["ProgressLevelSummaryResponse"]
+
+
+class ProgressLevelSummaryResponse(BaseModel):
+    level_id: int
+    level_name: str
+    level_code: str
+    progress_percent: float
+    completed_lessons: int
+    total_lessons: int
 
 
 class ProgressLessonDetailResponse(UserLessonProgressResponse):
@@ -44,5 +54,6 @@ class ProgressLessonDetailResponse(UserLessonProgressResponse):
     lesson_description: Optional[str] = None
 
 
+ProgressLevelSummaryResponse.model_rebuild()
 ProgressOverviewResponse.model_rebuild()
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import enum
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -16,13 +16,28 @@ class CEFRLevelEnum(str, enum.Enum):
     C2 = "C2"
 
 
-class Level(Base):
-    __tablename__ = "levels"
+class Language(Base):
+    __tablename__ = "languages"
 
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(Enum(CEFRLevelEnum), unique=True, nullable=False)
+    name = Column(String, nullable=False, unique=True)
+    code = Column(String, nullable=False, unique=True, index=True)
+
+    levels = relationship("Level", back_populates="language", cascade="all, delete-orphan")
+
+
+class Level(Base):
+    __tablename__ = "levels"
+    __table_args__ = (
+        UniqueConstraint("language_id", "code", name="uq_levels_language_code"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(Enum(CEFRLevelEnum), nullable=False)
+    language_id = Column(Integer, ForeignKey("languages.id", ondelete="CASCADE"), nullable=False, index=True)
     display_order = Column(Integer, nullable=False, default=0)
 
+    language = relationship("Language", back_populates="levels")
     lessons = relationship("Lesson", back_populates="level", cascade="all, delete-orphan")
 
 

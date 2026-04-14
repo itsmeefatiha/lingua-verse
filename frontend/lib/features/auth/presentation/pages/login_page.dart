@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../admin/presentation/pages/admin_dashboard_page.dart';
+import 'language_selection_page.dart';
+import '../../../shell/presentation/pages/main_shell_page.dart';
 import 'forgot_password_email_page.dart';
 import 'signup_page.dart';
 import '../providers/auth_provider.dart';
@@ -151,6 +154,20 @@ class _LoginPageState extends State<LoginPage> {
                             email: _emailController.text.trim(),
                             password: _passwordController.text,
                           );
+                          if (!context.mounted) {
+                            return;
+                          }
+                          final isAdmin = auth.user?.role.toLowerCase() == 'admin';
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (_) => isAdmin
+                                  ? const AdminDashboardPage()
+                                  : (auth.needsLanguageSelection
+                                      ? const LanguageSelectionPage()
+                                      : const MainShellPage()),
+                            ),
+                            (route) => false,
+                          );
                         } catch (_) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -206,9 +223,13 @@ class _LoginPageState extends State<LoginPage> {
                           height: 24,
                         ),
                         const SizedBox(width: 12),
-                        const Text(
-                          'Continue with Google',
-                          style: TextStyle(color: Colors.black54, fontSize: 16),
+                        const Flexible(
+                          child: Text(
+                            'Continue with Google',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.black54, fontSize: 16),
+                          ),
                         ),
                       ],
                     ),

@@ -5,7 +5,7 @@ import '../../../auth/presentation/pages/profile_page.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../gamification/presentation/pages/leaderboard_page.dart';
 import '../../../gamification/presentation/providers/gamification_provider.dart';
-import '../../../learning/presentation/pages/home_page.dart';
+import '../../../learning/presentation/pages/levels_dashboard_page.dart';
 import '../../../learning/presentation/providers/learning_provider.dart';
 import '../../../progress/presentation/pages/dashboard_page.dart';
 import '../../../progress/presentation/pages/statistics_page.dart';
@@ -30,7 +30,8 @@ class _MainShellPageState extends State<MainShellPage> {
     }
     _loaded = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LearningProvider>().loadCatalog();
+      final targetLanguage = context.read<AuthProvider>().user?.targetLanguage;
+      context.read<LearningProvider>().fetchLanguages(preferredLanguageCode: targetLanguage);
       context.read<ProgressProvider>().loadDashboard();
       context.read<GamificationProvider>().loadLeaderboard();
       context.read<AuthProvider>().refreshMe();
@@ -44,7 +45,6 @@ class _MainShellPageState extends State<MainShellPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('LinguaVerse'),
         actions: [
           _TopStat(icon: Icons.bolt_rounded, label: '${user?.totalXp ?? 0} XP'),
           _TopStat(icon: Icons.local_fire_department_rounded, label: '${user?.streak ?? 0}'),
@@ -61,7 +61,7 @@ class _MainShellPageState extends State<MainShellPage> {
         onDestinationSelected: shell.setIndex,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.donut_small), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Lessons'),
           NavigationDestination(icon: Icon(Icons.query_stats), label: 'Stats'),
           NavigationDestination(icon: Icon(Icons.leaderboard_outlined), label: 'Leaderboard'),
           NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
@@ -80,9 +80,9 @@ class _ShellBody extends StatelessWidget {
 
     switch (shell.index) {
       case 0:
-        return const HomePage();
-      case 1:
         return const DashboardPage();
+      case 1:
+        return const LevelsDashboardPage();
       case 2:
         return const StatisticsPage();
       case 3:

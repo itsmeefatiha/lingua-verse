@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/catalog_models.dart';
 import '../providers/learning_provider.dart';
 import '../widgets/vocabulary_card.dart';
@@ -34,7 +35,12 @@ class LessonDetailPage extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: () async {
                         final learning = context.read<LearningProvider>();
-                        await learning.loadQuiz(levelCode: lesson.levelCode, count: 10);
+                        final languageCode = context.read<AuthProvider>().user?.targetLanguage;
+                        await learning.loadQuiz(
+                          levelCode: lesson.levelCode,
+                          languageCode: languageCode,
+                          count: 10,
+                        );
                         if (!context.mounted) {
                           return;
                         }
