@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.gamification import XPSourceTypeEnum, XPTransaction
 from app.models.progress import ProgressStatusEnum, UserLessonProgress
-from app.models.user import LeagueEnum, User
+from app.models.user import LeagueEnum, RoleEnum, User
 
 XP_LESSON_COMPLETION = 50
 XP_QUIZ_SUCCESS = 20
@@ -154,6 +154,7 @@ def register_quiz_success_activity(db: Session, *, user_id: int, attempt_id: int
 def list_weekly_leaderboard(db: Session, limit: int = 10) -> list[User]:
     return (
         db.query(User)
+        .filter(User.role != RoleEnum.ADMIN)
         .order_by(User.weekly_xp.desc(), User.total_xp.desc(), User.id.asc())
         .limit(limit)
         .all()

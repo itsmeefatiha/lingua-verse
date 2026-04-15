@@ -14,6 +14,14 @@ class AuthRepository {
     return data['access_token'] as String;
   }
 
+  Future<String> loginWithGoogle({required String idToken}) async {
+    final data = await _apiClient.postJson(
+      '/auth/auth/google',
+      body: {'idToken': idToken},
+    );
+    return data['access_token'] as String;
+  }
+
   Future<void> register({
     required String fullName,
     required String email,

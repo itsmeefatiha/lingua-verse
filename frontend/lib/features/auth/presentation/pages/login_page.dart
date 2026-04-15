@@ -221,7 +221,32 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   height: 60,
                   child: OutlinedButton(
-                    onPressed: () => auth.socialLogin('google'),
+                    onPressed: auth.isLoading
+                        ? null
+                        : () async {
+                            try {
+                              await auth.socialLogin('google');
+                              if (!context.mounted) {
+                                return;
+                              }
+                              final isAdmin = auth.user?.role.toLowerCase() == 'admin';
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (_) => isAdmin
+                                      ? const AdminShellPage()
+                                      : const MainShellPage(),
+                                ),
+                                (route) => false,
+                              );
+                            } catch (_) {
+                              if (!context.mounted) {
+                                return;
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(auth.error ?? 'Google login failed')),
+                              );
+                            }
+                          },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.black12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

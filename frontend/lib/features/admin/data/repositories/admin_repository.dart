@@ -25,6 +25,31 @@ class AdminRepository {
     await _apiClient.deleteJson('/users/admin/users/$userId');
   }
 
+  Future<AdminUserModel> updateUser(
+    int userId, {
+    String? fullName,
+    String? email,
+    String? avatarUrl,
+    String? sourceLanguage,
+    String? targetLanguage,
+    String? role,
+    bool? isActive,
+  }) async {
+    final data = await _apiClient.patchJson(
+      '/users/admin/users/$userId',
+      body: {
+        if (fullName != null) 'full_name': fullName,
+        if (email != null) 'email': email,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
+        if (sourceLanguage != null) 'source_language': sourceLanguage,
+        if (targetLanguage != null) 'target_language': targetLanguage,
+        if (role != null) 'role': role,
+        if (isActive != null) 'is_active': isActive,
+      },
+    );
+    return AdminUserModel.fromJson(data);
+  }
+
   Future<List<LearningLanguage>> fetchLanguages() async {
     final data = await _apiClient.getList('/content/languages');
     return data.map((item) => LearningLanguage.fromApi(item as Map<String, dynamic>)).toList();

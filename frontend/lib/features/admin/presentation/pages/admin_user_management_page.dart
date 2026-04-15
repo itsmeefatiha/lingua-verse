@@ -79,10 +79,13 @@ class _AdminUserManagementPageState extends State<AdminUserManagementPage> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: const Color(0xFF00D1C1).withOpacity(0.12),
-                      child: Text(
-                        user.fullName.isNotEmpty ? user.fullName.substring(0, 1).toUpperCase() : '?',
-                        style: const TextStyle(color: Color(0xFF00A99A), fontWeight: FontWeight.bold),
-                      ),
+                      backgroundImage: user.avatarUrl.trim().isNotEmpty ? NetworkImage(user.avatarUrl.trim()) : null,
+                      child: user.avatarUrl.trim().isEmpty
+                          ? Text(
+                              user.fullName.isNotEmpty ? user.fullName.substring(0, 1).toUpperCase() : '?',
+                              style: const TextStyle(color: Color(0xFF00A99A), fontWeight: FontWeight.bold),
+                            )
+                          : null,
                     ),
                     title: Text(user.fullName),
                     subtitle: Text('${user.email}\n${user.role} • ${user.currentLeague} • ${user.totalXp} XP'),
@@ -91,7 +94,7 @@ class _AdminUserManagementPageState extends State<AdminUserManagementPage> {
                       spacing: 6,
                       children: [
                         IconButton(
-                          onPressed: () => _showEditDialog(context, user.fullName),
+                          onPressed: () => _showEditDialog(context, user),
                           icon: const Icon(Icons.edit_outlined),
                         ),
                         IconButton(
@@ -111,13 +114,76 @@ class _AdminUserManagementPageState extends State<AdminUserManagementPage> {
     );
   }
 
-  void _showEditDialog(BuildContext context, String currentName) {
+  void _showEditDialog(BuildContext context, dynamic user) {
+    final fullNameController = TextEditingController(text: user.fullName);
+    final emailController = TextEditingController(text: user.email);
+    final sourceLanguageController = TextEditingController(text: user.sourceLanguage);
+    final targetLanguageController = TextEditingController(text: user.targetLanguage);
+    String role = user.role;
+    bool isActive = user.isActive;
+
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Edit User Info'),
-        content: Text('Editing flow for $currentName can be wired next.'),
-        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close'))],
+      builder: (_) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('Edit User Info'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: fullNameController, decoration: const InputDecoration(labelText: 'Full name')),
+                const SizedBox(height: 12),
+                TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
+                const SizedBox(height: 12),
+                TextField(controller: sourceLanguageController, decoration: const InputDecoration(labelText: 'Source language')),
+                const SizedBox(height: 12),
+                TextField(controller: targetLanguageController, decoration: const InputDecoration(labelText: 'Target language')),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: role.toLowerCase(),
+                  decoration: const InputDecoration(labelText: 'Role'),
+                  items: const [
+                    DropdownMenuItem(value: 'user', child: Text('user')),
+                    DropdownMenuItem(value: 'admin', child: Text('admin')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => role = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Active'),
+                  value: isActive,
+                  onChanged: (value) => setState(() => isActive = value),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await context.read<AdminUserProvider>().updateUser(
+                      user.id,
+                      fullName: fullNameController.text.trim(),
+                      email: emailController.text.trim(),
+                      sourceLanguage: sourceLanguageController.text.trim(),
+                      targetLanguage: targetLanguageController.text.trim(),
+                      role: role,
+                      isActive: isActive,
+                    );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }

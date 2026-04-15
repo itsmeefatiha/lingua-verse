@@ -6,7 +6,7 @@ from app.models.user import User, LeagueEnum
 from app.models.analytics import ListeningSession
 from app.models.progress import UserLessonProgress, ProgressStatusEnum
 from app.models.quiz import QuizAttempt
-from app.schemas.user import UserCreate, UserProfileUpdate
+from app.schemas.user import UserCreate, UserProfileUpdate, AdminUserUpdate
 from app.core.security import get_password_hash, generate_otp, verify_password
 
 logger = logging.getLogger(__name__)
@@ -221,3 +221,31 @@ def list_admin_users(db: Session, search: str | None = None) -> list[User]:
 def delete_user(db: Session, user: User) -> None:
     db.delete(user)
     db.commit()
+
+
+def update_admin_user(db: Session, user: User, update_in: AdminUserUpdate) -> User:
+    update_data = update_in.model_dump(exclude_unset=True)
+
+    if "email" in update_data:
+        email = str(update_data["email"]).strip().lower()
+        existing_user = db.query(User).filter(User.email == email, User.id != user.id).first()
+        if existing_user:
+            raise ValueError("Cet email est déjà utilisé")
+        user.email = email
+
+    if "full_name" in update_data:
+        user.full_name = update_data["full_name"]
+    if "avatar_url" in update_data:
+        user.avatar_url = update_data["avatar_url"]
+    if "source_language" in update_data:
+        user.source_language = update_data["source_language"] or user.source_language
+    if "target_language" in update_data:
+        user.target_language = update_data["target_language"] or user.target_language
+    if "role" in update_data and update_data["role"] is not None:
+        user.role = update_data["role"]
+    if "is_active" in update_data and update_data["is_active"] is not None:
+        user.is_active = update_data["is_active"]
+
+    db.commit()
+    db.refresh(user)
+    return user

@@ -41,12 +41,6 @@ class _AdminContentManagementPageState extends State<AdminContentManagementPage>
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Content Management'),
-        actions: [
-          IconButton(
-            onPressed: () => _openAddFlow(AdminAddContentType.level),
-            icon: const Icon(Icons.add),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF00D1C1),
@@ -72,7 +66,6 @@ class _AdminContentManagementPageState extends State<AdminContentManagementPage>
                     .map(
                       (language) => ListTile(
                         title: Text('${language.name} (${language.code.toUpperCase()})'),
-                        subtitle: Text('ID ${language.id}'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

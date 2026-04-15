@@ -52,6 +52,16 @@ class UserProfileUpdate(BaseModel):
     source_language: Optional[str] = None
     target_language: Optional[str] = None
 
+
+class AdminUserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    avatar_url: Optional[str] = None
+    source_language: Optional[str] = None
+    target_language: Optional[str] = None
+    role: Optional[RoleEnum] = None
+    is_active: Optional[bool] = None
+
 # Réponse standard de l'API
 class UserResponse(BaseModel):
     id: int

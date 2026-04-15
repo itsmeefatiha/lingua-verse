@@ -6,6 +6,11 @@ class AppConfig {
     defaultValue: '',
   );
 
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
+
   static String get apiBaseUrl {
     if (_definedApiBaseUrl.isNotEmpty) {
       return _definedApiBaseUrl;

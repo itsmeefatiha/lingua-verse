@@ -40,6 +40,37 @@ class AdminUserProvider extends ChangeNotifier {
     await loadUsers();
   }
 
+  Future<void> updateUser(
+    int userId, {
+    required String fullName,
+    required String email,
+    required String sourceLanguage,
+    required String targetLanguage,
+    required String role,
+    required bool isActive,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _repository.updateUser(
+        userId,
+        fullName: fullName,
+        email: email,
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
+        role: role,
+        isActive: isActive,
+      );
+      await loadUsers(search: _search.isEmpty ? null : _search);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   void setSearch(String value) {
     _search = value;
     notifyListeners();

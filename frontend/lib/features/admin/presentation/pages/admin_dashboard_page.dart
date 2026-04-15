@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/admin_dashboard_provider.dart';
 
+const Color _primaryTeal = Color(0xFF00D1C1);
+const Color _secondaryPurple = Color(0xFF6B5BD8);
+
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
 
@@ -33,19 +36,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
-        actions: [
-          IconButton(
-            onPressed: () => context.read<AuthProvider>().logout(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
+        title: const Text('Dashboard'),
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<AdminDashboardProvider>().load(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Text(
+              'Welcome back !',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Here is your dashboard overview for today.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 18),
             if (admin.isLoading && admin.stats == null)
               const Padding(
                 padding: EdgeInsets.only(top: 120),
@@ -97,14 +108,10 @@ class _StatGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      ('Total users', stats.totalUsers.toString()),
       ('Avg time spent', '${stats.averageTimeSpentMinutes.toStringAsFixed(1)} min'),
-      ('Lessons completed', stats.totalLessonsCompleted.toString()),
       ('Active users', stats.activeUsers.toString()),
-      ('Admins', stats.adminUsers.toString()),
-      ('Total XP', stats.totalXpDistributed.toString()),
       ('Average XP', stats.averageXp.toStringAsFixed(1)),
-      ('Users', stats.userUsers.toString()),
+      ('Bronze users', stats.bronzeUsers.toString()),
     ];
 
     return GridView.builder(
@@ -188,6 +195,7 @@ class _PopularLanguagesCard extends StatelessWidget {
                           bars.length,
                           (index) {
                             final entry = bars[index];
+                            final barColor = index.isEven ? _primaryTeal : _secondaryPurple;
                             return BarChartGroupData(
                               x: index,
                               barRods: [
@@ -195,7 +203,7 @@ class _PopularLanguagesCard extends StatelessWidget {
                                   toY: (entry.durationMinutes as num).toDouble(),
                                   width: 18,
                                   borderRadius: BorderRadius.circular(8),
-                                  color: const Color(0xFF00D1C1),
+                                  color: barColor,
                                 ),
                               ],
                             );

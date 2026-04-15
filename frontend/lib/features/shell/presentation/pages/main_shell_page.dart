@@ -8,9 +8,9 @@ import '../../../gamification/presentation/providers/gamification_provider.dart'
 import '../../../learning/presentation/pages/levels_dashboard_page.dart';
 import '../../../learning/presentation/providers/learning_provider.dart';
 import '../../../progress/presentation/pages/dashboard_page.dart';
-import '../../../progress/presentation/pages/statistics_page.dart';
 import '../../../progress/presentation/providers/progress_provider.dart';
 import '../providers/shell_provider.dart';
+import 'unity_ar_placeholder.dart';
 
 class MainShellPage extends StatefulWidget {
   const MainShellPage({super.key});
@@ -62,7 +62,7 @@ class _MainShellPageState extends State<MainShellPage> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Lessons'),
-          NavigationDestination(icon: Icon(Icons.query_stats), label: 'Stats'),
+          NavigationDestination(icon: Icon(Icons.view_in_ar_outlined), label: 'AR'),
           NavigationDestination(icon: Icon(Icons.leaderboard_outlined), label: 'Leaderboard'),
           NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
@@ -84,7 +84,7 @@ class _ShellBody extends StatelessWidget {
       case 1:
         return const LevelsDashboardPage();
       case 2:
-        return const StatisticsPage();
+        return const UnityARPlaceholder();
       case 3:
         return const LeaderboardPage();
       case 4:

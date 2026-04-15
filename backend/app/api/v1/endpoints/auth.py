@@ -1,15 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import or_, and_
 import logging
+from pydantic import BaseModel, Field
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 from app.db.database import get_db
 from app.schemas.user import LoginRequest, UserCreate, UserResponse, OTPVerify, PasswordResetRequest, PasswordResetConfirm
 from app.services import user_service, email_service
 from app.core.security import verify_password, create_access_token
+from app.core.config import settings
+from app.models.user import User, RoleEnum
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class GoogleAuthRequest(BaseModel):
+    id_token: str = Field(..., alias="idToken")
+
+    model_config = {"populate_by_name": True}
 
 def send_email_with_error_handling(email: str, otp_code: str, email_type: str):
     """Wrapper to handle email sending errors in background tasks."""
@@ -20,6 +31,32 @@ def send_email_with_error_handling(email: str, otp_code: str, email_type: str):
             email_service.send_reset_password_email(email, otp_code)
     except Exception as e:
         logger.error(f"Failed to send {email_type} email to {email}: {e}", exc_info=True)
+
+
+def verify_google_token(token: str) -> dict:
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="GOOGLE_CLIENT_ID non configuré")
+
+    try:
+        payload = google_id_token.verify_oauth2_token(
+            token,
+            google_requests.Request(),
+            settings.GOOGLE_CLIENT_ID,
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Google idToken invalide")
+
+    issuer = payload.get("iss")
+    if issuer not in {"accounts.google.com", "https://accounts.google.com"}:
+        raise HTTPException(status_code=401, detail="Issuer Google invalide")
+
+    if not payload.get("sub") or not payload.get("email"):
+        raise HTTPException(status_code=400, detail="Payload Google incomplet")
+
+    if payload.get("email_verified") is False:
+        raise HTTPException(status_code=401, detail="Email Google non vérifié")
+
+    return payload
 
 @router.post("/register", response_model=UserResponse)
 def register(user_in: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -87,6 +124,55 @@ def reset_password(data: PasswordResetConfirm, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Code OTP invalide ou expiré")
         
     return {"msg": "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."}
+
+
+@router.post("/auth/google")
+def auth_google(data: GoogleAuthRequest, db: Session = Depends(get_db)):
+    payload = verify_google_token(data.id_token)
+
+    google_sub = str(payload["sub"]).strip()
+    email = str(payload["email"]).strip().lower()
+    full_name = payload.get("name")
+    avatar_url = payload.get("picture")
+
+    user = (
+        db.query(User)
+        .filter(
+            or_(
+                and_(User.oauth_provider == "google", User.oauth_id == google_sub),
+                User.email == email,
+            )
+        )
+        .first()
+    )
+
+    if user:
+        user.email = email
+        user.oauth_provider = "google"
+        user.oauth_id = google_sub
+        user.is_active = True
+        if full_name:
+            user.full_name = full_name
+        if avatar_url:
+            user.avatar_url = avatar_url
+    else:
+        user = User(
+            email=email,
+            hashed_password=None,
+            oauth_provider="google",
+            oauth_id=google_sub,
+            full_name=full_name,
+            avatar_url=avatar_url,
+            role=RoleEnum.USER,
+            is_active=True,
+        )
+        db.add(user)
+
+    db.commit()
+    db.refresh(user)
+
+    access_token = create_access_token(subject=user.id)
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # L'intégration OAuth2 (Google/GitHub) en utilisant Authlib.
 @router.get("/login/google")
