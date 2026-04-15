@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../admin/presentation/pages/admin_dashboard_page.dart';
-import 'language_selection_page.dart';
+import '../../../admin/presentation/pages/admin_shell_page.dart';
 import '../../../shell/presentation/pages/main_shell_page.dart';
 import 'forgot_password_email_page.dart';
 import 'signup_page.dart';
@@ -148,32 +147,44 @@ class _LoginPageState extends State<LoginPage> {
                   height: 60,
                   child: ElevatedButton(
                     onPressed: auth.isLoading ? null : () async {
-                      if (_formKey.currentState!.validate()) {
-                        try {
-                          await auth.login(
-                            email: _emailController.text.trim(),
-                            password: _passwordController.text,
+                      debugPrint('[Login] Sign in tapped');
+                      final isValid = _formKey.currentState?.validate() ?? false;
+                      if (!isValid) {
+                        debugPrint('[Login] Form validation failed');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please complete email and password correctly.')),
                           );
-                          if (!context.mounted) {
-                            return;
-                          }
-                          final isAdmin = auth.user?.role.toLowerCase() == 'admin';
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (_) => isAdmin
-                                  ? const AdminDashboardPage()
-                                  : (auth.needsLanguageSelection
-                                      ? const LanguageSelectionPage()
-                                      : const MainShellPage()),
-                            ),
-                            (route) => false,
+                        }
+                        return;
+                      }
+
+                      final email = _emailController.text.trim();
+                      debugPrint('[Login] Attempting API login for: $email');
+                      try {
+                        await auth.login(
+                          email: email,
+                          password: _passwordController.text,
+                        );
+                        debugPrint('[Login] Login success, role=${auth.user?.role}');
+                        if (!context.mounted) {
+                          return;
+                        }
+                        final isAdmin = auth.user?.role.toLowerCase() == 'admin';
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (_) => isAdmin
+                                    ? const AdminShellPage()
+                                : const MainShellPage(),
+                          ),
+                          (route) => false,
+                        );
+                      } catch (e) {
+                        debugPrint('[Login] Login failed before/after API call: $e');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(auth.error ?? 'Login failed')),
                           );
-                        } catch (_) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(auth.error ?? 'Login failed')),
-                            );
-                          }
                         }
                       }
                     },

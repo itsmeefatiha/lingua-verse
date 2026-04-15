@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../../data/models/admin_dashboard_stats_model.dart';
 import '../../data/repositories/admin_repository.dart';
 
-class AdminProvider extends ChangeNotifier {
-  AdminProvider(this._repository);
+class AdminDashboardProvider extends ChangeNotifier {
+  AdminDashboardProvider(this._repository);
 
   final AdminRepository _repository;
 
@@ -16,7 +16,7 @@ class AdminProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadStats() async {
+  Future<void> load() async {
     _isLoading = true;
     _error = null;
     notifyListeners();

@@ -3,12 +3,20 @@ from sqlalchemy.orm import Session
 from app.models.content import CEFRLevelEnum, Language, Level, Lesson, Vocabulary
 from app.models.progress import ProgressStatusEnum, UserLessonProgress
 from app.models.quiz import QuizAttempt
-from app.schemas.content import LessonCreate, LessonUpdate, VocabularyCreate, VocabularyUpdate
+from app.schemas.content import LevelCreate, LessonCreate, LessonUpdate, VocabularyCreate, VocabularyUpdate
 from app.services import tts_service
 
 
 def list_levels(db: Session) -> list[Level]:
     return db.query(Level).order_by(Level.display_order.asc()).all()
+
+
+def create_level(db: Session, level_in: LevelCreate) -> Level:
+    level = Level(**level_in.model_dump())
+    db.add(level)
+    db.commit()
+    db.refresh(level)
+    return level
 
 
 def list_supported_languages(db: Session) -> list[dict]:

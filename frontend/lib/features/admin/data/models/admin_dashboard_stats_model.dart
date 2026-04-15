@@ -36,28 +36,32 @@ class AdminDashboardStatsModel {
     required this.activeUsers,
     required this.inactiveUsers,
     required this.adminUsers,
-    required this.teacherUsers,
-    required this.studentUsers,
+    required this.userUsers,
     required this.totalXpDistributed,
     required this.averageXp,
+    required this.averageTimeSpentMinutes,
+    required this.totalLessonsCompleted,
     required this.bronzeUsers,
     required this.argentUsers,
     required this.orUsers,
     required this.topUsers,
+    required this.popularLanguages,
   });
 
   final int totalUsers;
   final int activeUsers;
   final int inactiveUsers;
   final int adminUsers;
-  final int teacherUsers;
-  final int studentUsers;
+  final int userUsers;
   final int totalXpDistributed;
   final double averageXp;
+  final double averageTimeSpentMinutes;
+  final int totalLessonsCompleted;
   final int bronzeUsers;
   final int argentUsers;
   final int orUsers;
   final List<AdminTopUserModel> topUsers;
+  final List<AdminPopularLanguageModel> popularLanguages;
 
   factory AdminDashboardStatsModel.fromJson(Map<String, dynamic> json) {
     return AdminDashboardStatsModel(
@@ -65,16 +69,37 @@ class AdminDashboardStatsModel {
       activeUsers: json['active_users'] as int? ?? 0,
       inactiveUsers: json['inactive_users'] as int? ?? 0,
       adminUsers: json['admin_users'] as int? ?? 0,
-      teacherUsers: json['teacher_users'] as int? ?? 0,
-      studentUsers: json['student_users'] as int? ?? 0,
+      userUsers: json['user_users'] as int? ?? 0,
       totalXpDistributed: json['total_xp_distributed'] as int? ?? 0,
       averageXp: (json['average_xp'] as num?)?.toDouble() ?? 0,
+      averageTimeSpentMinutes: (json['average_time_spent_minutes'] as num?)?.toDouble() ?? 0,
+      totalLessonsCompleted: json['total_lessons_completed'] as int? ?? 0,
       bronzeUsers: json['bronze_users'] as int? ?? 0,
       argentUsers: json['argent_users'] as int? ?? 0,
       orUsers: json['or_users'] as int? ?? 0,
       topUsers: (json['top_users'] as List<dynamic>? ?? [])
           .map((item) => AdminTopUserModel.fromJson(item as Map<String, dynamic>))
           .toList(),
+      popularLanguages: (json['popular_languages'] as List<dynamic>? ?? [])
+          .map((item) => AdminPopularLanguageModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class AdminPopularLanguageModel {
+  const AdminPopularLanguageModel({
+    required this.languageCode,
+    required this.durationMinutes,
+  });
+
+  final String languageCode;
+  final double durationMinutes;
+
+  factory AdminPopularLanguageModel.fromJson(Map<String, dynamic> json) {
+    return AdminPopularLanguageModel(
+      languageCode: (json['language_code'] as String?) ?? '',
+      durationMinutes: (json['duration_minutes'] as num?)?.toDouble() ?? 0,
     );
   }
 }

@@ -1,8 +1,11 @@
 import logging
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import String, func
 from datetime import datetime, timedelta, timezone
-from app.models.user import User, RoleEnum, LeagueEnum
+from app.models.user import User, LeagueEnum
+from app.models.analytics import ListeningSession
+from app.models.progress import UserLessonProgress, ProgressStatusEnum
+from app.models.quiz import QuizAttempt
 from app.schemas.user import UserCreate, UserProfileUpdate
 from app.core.security import get_password_hash, generate_otp, verify_password
 
@@ -106,12 +109,25 @@ def get_admin_dashboard_stats(db: Session) -> dict:
     active_users = db.query(func.count(User.id)).filter(User.is_active.is_(True)).scalar() or 0
     inactive_users = total_users - active_users
 
-    admin_users = db.query(func.count(User.id)).filter(User.role == RoleEnum.ADMIN).scalar() or 0
-    teacher_users = db.query(func.count(User.id)).filter(User.role == RoleEnum.TEACHER).scalar() or 0
-    student_users = db.query(func.count(User.id)).filter(User.role == RoleEnum.STUDENT).scalar() or 0
+    role_text = func.lower(User.role.cast(String))
+    admin_users = db.query(func.count(User.id)).filter(role_text == "admin").scalar() or 0
+    user_users = db.query(func.count(User.id)).filter(role_text.in_(["user", "student", "teacher"])) .scalar() or 0
 
     total_xp_distributed = db.query(func.coalesce(func.sum(User.total_xp), 0)).scalar() or 0
     average_xp = float(db.query(func.coalesce(func.avg(User.total_xp), 0)).scalar() or 0)
+
+    total_lessons_completed = (
+        db.query(func.count(UserLessonProgress.id))
+        .filter(UserLessonProgress.status == ProgressStatusEnum.COMPLETED)
+        .scalar()
+        or 0
+    )
+
+    total_listening_seconds = db.query(func.coalesce(func.sum(ListeningSession.duration_seconds), 0)).scalar() or 0
+    total_quiz_seconds = db.query(func.coalesce(func.sum(QuizAttempt.duration_seconds), 0)).scalar() or 0
+    average_time_spent_minutes = 0.0
+    if total_users > 0:
+        average_time_spent_minutes = round(((int(total_listening_seconds) + int(total_quiz_seconds)) / total_users) / 60.0, 2)
 
     bronze_users = (
         db.query(func.count(User.id)).filter(User.current_league == LeagueEnum.BRONZE).scalar() or 0
@@ -141,17 +157,67 @@ def get_admin_dashboard_stats(db: Session) -> dict:
         for user in top_users_query
     ]
 
+    language_rows = (
+        db.query(
+            ListeningSession.language_code.label("language_code"),
+            func.coalesce(func.sum(ListeningSession.duration_seconds), 0).label("duration_seconds"),
+        )
+        .group_by(ListeningSession.language_code)
+        .all()
+    )
+    language_rows += (
+        db.query(
+            QuizAttempt.language_code.label("language_code"),
+            func.coalesce(func.sum(QuizAttempt.duration_seconds), 0).label("duration_seconds"),
+        )
+        .filter(QuizAttempt.language_code.isnot(None))
+        .group_by(QuizAttempt.language_code)
+        .all()
+    )
+
+    aggregated_languages: dict[str, int] = {}
+    for row in language_rows:
+        code = (row.language_code or "").strip().lower()
+        if not code:
+            continue
+        aggregated_languages[code] = aggregated_languages.get(code, 0) + int(row.duration_seconds or 0)
+
+    popular_languages = [
+        {
+            "language_code": code,
+            "duration_minutes": round(seconds / 60.0, 2),
+        }
+        for code, seconds in sorted(aggregated_languages.items(), key=lambda item: item[1], reverse=True)[:6]
+    ]
+
     return {
         "total_users": total_users,
         "active_users": active_users,
         "inactive_users": inactive_users,
         "admin_users": admin_users,
-        "teacher_users": teacher_users,
-        "student_users": student_users,
+        "user_users": user_users,
         "total_xp_distributed": int(total_xp_distributed),
         "average_xp": average_xp,
+        "average_time_spent_minutes": average_time_spent_minutes,
+        "total_lessons_completed": int(total_lessons_completed),
         "bronze_users": bronze_users,
         "argent_users": argent_users,
         "or_users": or_users,
         "top_users": top_users,
+        "popular_languages": popular_languages,
     }
+
+
+def list_admin_users(db: Session, search: str | None = None) -> list[User]:
+    query = db.query(User)
+    if search:
+        pattern = f"%{search.strip().lower()}%"
+        query = query.filter(
+            func.lower(User.full_name).like(pattern) | func.lower(User.email).like(pattern)
+        )
+    return query.order_by(User.created_at.desc()).all()
+
+
+def delete_user(db: Session, user: User) -> None:
+    db.delete(user)
+    db.commit()

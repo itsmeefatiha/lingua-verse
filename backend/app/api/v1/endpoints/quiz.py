@@ -27,7 +27,7 @@ router = APIRouter()
 def create_question(
     question_in: QuestionCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_role(RoleEnum.TEACHER)),
+    _: User = Depends(require_role(RoleEnum.ADMIN)),
 ):
     lesson = db.query(Lesson).filter(Lesson.id == question_in.lesson_id).first()
     if not lesson:
@@ -64,7 +64,7 @@ def update_question(
     question_id: int,
     question_in: QuestionUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_role(RoleEnum.TEACHER)),
+    _: User = Depends(require_role(RoleEnum.ADMIN)),
 ):
     question = quiz_service.get_question(db, question_id)
     if not question:
@@ -83,7 +83,7 @@ def update_question(
 def delete_question(
     question_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_role(RoleEnum.TEACHER)),
+    _: User = Depends(require_role(RoleEnum.ADMIN)),
 ):
     question = quiz_service.get_question(db, question_id)
     if not question:

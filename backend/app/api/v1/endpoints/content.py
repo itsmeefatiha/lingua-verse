@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.db.database import get_db
 from app.models.content import CEFRLevelEnum, Level
-from app.models.user import RoleEnum, User
+from app.models.user import User, is_admin_role
 from app.schemas.content import (
     LanguageResponse,
+    LevelCreate,
     LessonCreate,
     LessonResponse,
     LessonUpdate,
@@ -22,7 +23,7 @@ router = APIRouter()
 
 
 def require_content_write_access(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role not in (RoleEnum.ADMIN, RoleEnum.TEACHER):
+    if not is_admin_role(current_user.role):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Privilèges insuffisants")
     return current_user
 
@@ -30,6 +31,26 @@ def require_content_write_access(current_user: User = Depends(get_current_user))
 @router.get("/levels", response_model=list[LevelResponse])
 def list_levels(db: Session = Depends(get_db)):
     return content_service.list_levels(db)
+
+
+@router.post("/levels", response_model=LevelResponse, status_code=status.HTTP_201_CREATED)
+def create_level(
+    level_in: LevelCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_content_write_access),
+):
+    existing = (
+        db.query(Level)
+        .filter(
+            Level.language_id == level_in.language_id,
+            Level.code == level_in.code,
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Niveau deja existant pour cette langue")
+
+    return content_service.create_level(db, level_in)
 
 
 @router.get("/languages", response_model=list[LanguageResponse])

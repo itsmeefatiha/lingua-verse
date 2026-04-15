@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../admin/presentation/pages/admin_dashboard_page.dart';
-import 'language_selection_page.dart';
+import '../../../admin/presentation/pages/admin_shell_page.dart';
 import '../../../shell/presentation/pages/main_shell_page.dart';
 import '../providers/auth_provider.dart';
 import 'login_page.dart';
@@ -34,10 +33,8 @@ class _SplashScreenState extends State<SplashScreen> {
         MaterialPageRoute(
           builder: (_) => auth.isAuthenticated
               ? (isAdmin
-                  ? const AdminDashboardPage()
-                  : (auth.needsLanguageSelection
-                      ? const LanguageSelectionPage()
-                      : const MainShellPage()))
+                  ? const AdminShellPage()
+                  : const MainShellPage())
               : const LoginScreen(),
         ),
       );

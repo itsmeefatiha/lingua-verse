@@ -173,7 +173,7 @@ class AuthProvider extends ChangeNotifier {
           streak: 0,
           weeklyXp: 0,
           currentLeague: 'bronze',
-          role: 'student',
+          role: 'user',
         )).copyWith(
           sourceLanguage: nativeLang,
           targetLanguage: targetLang,

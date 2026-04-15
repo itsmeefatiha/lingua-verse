@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -16,6 +18,7 @@ class ApiClient {
   final String baseUrl;
   final SessionStore sessionStore;
   final http.Client _client;
+  static const Duration _requestTimeout = Duration(seconds: 10);
 
   Uri _buildUri(String path) {
     return Uri.parse('$baseUrl$path');
@@ -51,8 +54,24 @@ class ApiClient {
     );
   }
 
+  Future<http.Response> _runRequest(Future<http.Response> request) async {
+    try {
+      return await request.timeout(_requestTimeout);
+    } on TimeoutException {
+      throw ApiException(
+        'Request timed out after ${_requestTimeout.inSeconds}s. Check that backend is running and reachable.',
+      );
+    } on SocketException {
+      throw ApiException('Unable to reach backend at $baseUrl. Is the API server running?');
+    } on http.ClientException catch (e) {
+      throw ApiException('Network error: ${e.message}');
+    }
+  }
+
   Future<Map<String, dynamic>> getJson(String path) async {
-    final response = await _client.get(_buildUri(path), headers: _headers(json: false));
+    final response = await _runRequest(
+      _client.get(_buildUri(path), headers: _headers(json: false)),
+    );
     if (response.statusCode >= 400) {
       _throwApiError(response);
     }
@@ -64,7 +83,9 @@ class ApiClient {
   }
 
   Future<List<dynamic>> getList(String path) async {
-    final response = await _client.get(_buildUri(path), headers: _headers(json: false));
+    final response = await _runRequest(
+      _client.get(_buildUri(path), headers: _headers(json: false)),
+    );
     if (response.statusCode >= 400) {
       _throwApiError(response);
     }
@@ -79,10 +100,12 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final response = await _client.post(
-      _buildUri(path),
-      headers: _headers(),
-      body: jsonEncode(body ?? <String, dynamic>{}),
+    final response = await _runRequest(
+      _client.post(
+        _buildUri(path),
+        headers: _headers(),
+        body: jsonEncode(body ?? <String, dynamic>{}),
+      ),
     );
     if (response.statusCode >= 400) {
       _throwApiError(response);
@@ -98,10 +121,12 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final response = await _client.post(
-      _buildUri(path),
-      headers: _headers(),
-      body: jsonEncode(body ?? <String, dynamic>{}),
+    final response = await _runRequest(
+      _client.post(
+        _buildUri(path),
+        headers: _headers(),
+        body: jsonEncode(body ?? <String, dynamic>{}),
+      ),
     );
     if (response.statusCode >= 400) {
       _throwApiError(response);
@@ -117,10 +142,12 @@ class ApiClient {
     String path, {
     required Map<String, dynamic> body,
   }) async {
-    final response = await _client.patch(
-      _buildUri(path),
-      headers: _headers(),
-      body: jsonEncode(body),
+    final response = await _runRequest(
+      _client.patch(
+        _buildUri(path),
+        headers: _headers(),
+        body: jsonEncode(body),
+      ),
     );
     if (response.statusCode >= 400) {
       _throwApiError(response);
@@ -133,10 +160,21 @@ class ApiClient {
   }
 
   Future<List<int>> getBytes(String path) async {
-    final response = await _client.get(_buildUri(path), headers: _headers(json: false));
+    final response = await _runRequest(
+      _client.get(_buildUri(path), headers: _headers(json: false)),
+    );
     if (response.statusCode >= 400) {
       _throwApiError(response);
     }
     return response.bodyBytes;
+  }
+
+  Future<void> deleteJson(String path) async {
+    final response = await _runRequest(
+      _client.delete(_buildUri(path), headers: _headers(json: false)),
+    );
+    if (response.statusCode >= 400) {
+      _throwApiError(response);
+    }
   }
 }

@@ -29,6 +29,12 @@ class LevelByLanguageResponse(BaseModel):
     is_locked: bool
 
 
+class LevelCreate(BaseModel):
+    code: CEFRLevelEnum
+    language_id: int
+    display_order: int = Field(default=0, ge=0)
+
+
 class LessonBase(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None

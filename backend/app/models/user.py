@@ -5,8 +5,23 @@ from app.db.base import Base
 
 class RoleEnum(str, enum.Enum):
     ADMIN = "admin"
-    STUDENT = "student"
-    TEACHER = "teacher"
+    USER = "user"
+    LEGACY_ADMIN = "ADMIN"
+    LEGACY_STUDENT = "STUDENT"
+    LEGACY_TEACHER = "TEACHER"
+
+
+def normalize_role_value(role: "RoleEnum | str | None") -> str:
+    if role is None:
+        return "user"
+    raw = role.value if isinstance(role, RoleEnum) else str(role)
+    if raw.lower() == "admin":
+        return "admin"
+    return "user"
+
+
+def is_admin_role(role: "RoleEnum | str | None") -> bool:
+    return normalize_role_value(role) == "admin"
 
 
 class LeagueEnum(str, enum.Enum):
@@ -32,7 +47,15 @@ class User(Base):
     target_language = Column(String, default="en")
 
     # RBAC
-    role = Column(Enum(RoleEnum), default=RoleEnum.STUDENT)
+    role = Column(
+        Enum(
+            RoleEnum,
+            name="roleenum",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        default=RoleEnum.USER,
+        nullable=False,
+    )
 
     # Gamification
     total_xp = Column(Integer, default=0, nullable=False)

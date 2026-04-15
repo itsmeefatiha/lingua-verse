@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../providers/admin_provider.dart';
+import '../providers/admin_dashboard_provider.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -22,13 +23,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
     _loaded = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AdminProvider>().loadStats();
+      context.read<AdminDashboardProvider>().load();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final admin = context.watch<AdminProvider>();
+    final admin = context.watch<AdminDashboardProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -41,7 +42,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => context.read<AdminProvider>().loadStats(),
+        onRefresh: () => context.read<AdminDashboardProvider>().load(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -57,6 +58,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
             if (admin.stats != null) ...[
               _StatGrid(stats: admin.stats!),
+              const SizedBox(height: 14),
+              _PopularLanguagesCard(stats: admin.stats!),
               const SizedBox(height: 14),
               Card(
                 child: Padding(
@@ -95,13 +98,13 @@ class _StatGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       ('Total users', stats.totalUsers.toString()),
+      ('Avg time spent', '${stats.averageTimeSpentMinutes.toStringAsFixed(1)} min'),
+      ('Lessons completed', stats.totalLessonsCompleted.toString()),
       ('Active users', stats.activeUsers.toString()),
-      ('Students', stats.studentUsers.toString()),
-      ('Teachers', stats.teacherUsers.toString()),
       ('Admins', stats.adminUsers.toString()),
       ('Total XP', stats.totalXpDistributed.toString()),
       ('Average XP', stats.averageXp.toStringAsFixed(1)),
-      ('Leagues B/A/O', '${stats.bronzeUsers}/${stats.argentUsers}/${stats.orUsers}'),
+      ('Users', stats.userUsers.toString()),
     ];
 
     return GridView.builder(
@@ -132,5 +135,84 @@ class _StatGrid extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _PopularLanguagesCard extends StatelessWidget {
+  const _PopularLanguagesCard({required this.stats});
+
+  final dynamic stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final bars = stats.popularLanguages as List<dynamic>;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Most Popular Target Languages', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 220,
+              child: bars.isEmpty
+                  ? const Center(child: Text('No activity yet'))
+                  : BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: _maxY(bars),
+                        titlesData: FlTitlesData(
+                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 38)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 30,
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= bars.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text((bars[index].languageCode as String).toUpperCase(), style: const TextStyle(fontSize: 11)),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        barGroups: List.generate(
+                          bars.length,
+                          (index) {
+                            final entry = bars[index];
+                            return BarChartGroupData(
+                              x: index,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: (entry.durationMinutes as num).toDouble(),
+                                  width: 18,
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: const Color(0xFF00D1C1),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  double _maxY(List<dynamic> bars) {
+    final values = bars.map((entry) => (entry.durationMinutes as num).toDouble()).toList();
+    final maxValue = values.isEmpty ? 1.0 : values.reduce((a, b) => a > b ? a : b);
+    return maxValue <= 0 ? 1.0 : maxValue * 1.2;
   }
 }
