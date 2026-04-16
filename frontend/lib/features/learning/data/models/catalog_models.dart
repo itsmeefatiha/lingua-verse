@@ -96,7 +96,10 @@ class LessonModel {
     );
   }
 
-  LessonModel copyWith({double? progress, List<VocabularyModel>? vocabularies}) {
+  LessonModel copyWith({
+    double? progress,
+    List<VocabularyModel>? vocabularies,
+  }) {
     return LessonModel(
       id: id,
       levelId: levelId,
@@ -130,6 +133,7 @@ class VocabularyModel {
     required this.translation,
     required this.example,
     required this.category,
+    required this.imageUrl,
   });
 
   final int id;
@@ -137,6 +141,7 @@ class VocabularyModel {
   final String translation;
   final String example;
   final String category;
+  final String? imageUrl;
 
   factory VocabularyModel.fromApi(Map<String, dynamic> json) {
     return VocabularyModel(
@@ -145,6 +150,7 @@ class VocabularyModel {
       translation: json['translation'] as String,
       example: json['example'] as String? ?? '',
       category: json['category'] as String? ?? 'general',
+      imageUrl: (json['image_url'] as String?)?.trim() ?? '',
     );
   }
 
@@ -155,6 +161,7 @@ class VocabularyModel {
       'translation': translation,
       'example': example,
       'category': category,
+      'image_url': imageUrl,
     };
   }
 }

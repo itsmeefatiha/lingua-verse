@@ -40,7 +40,8 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
   void _validateRequirements() {
     setState(() {
       _hasMinLength = _newPasswordController.text.length >= 8;
-      _passwordsMatch = _newPasswordController.text.isNotEmpty &&
+      _passwordsMatch =
+          _newPasswordController.text.isNotEmpty &&
           _newPasswordController.text == _confirmPasswordController.text;
     });
   }
@@ -57,14 +58,13 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subdued = scheme.onSurface.withOpacity(0.8);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      appBar: AppBar(elevation: 0),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
@@ -73,22 +73,18 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Set New Password',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Set a strong password to protect your\naccount.Minimum 8 characters required.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(fontSize: 14, color: subdued, height: 1.5),
                 ),
                 const SizedBox(height: 40),
 
@@ -99,11 +95,16 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                   decoration: InputDecoration(
                     hintText: 'New Password',
                     filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    fillColor: scheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureNewPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscureNewPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -114,11 +115,11 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                   ),
                   validator: (value) {
@@ -136,11 +137,16 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                   decoration: InputDecoration(
                     hintText: 'Confirm Password',
                     filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    fillColor: scheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -151,16 +157,17 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Required';
-                    if (value != _newPasswordController.text) return 'Passwords do not match';
+                    if (value != _newPasswordController.text)
+                      return 'Passwords do not match';
                     return null;
                   },
                 ),
@@ -170,19 +177,19 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FA), // Very light gray/blue tint
-                    border: Border.all(color: Colors.black12),
+                    color: scheme.surface,
+                    border: Border.all(color: borderColor),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Password Requirements',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: subdued,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -190,14 +197,18 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                       Row(
                         children: [
                           Icon(
-                            _hasMinLength ? Icons.check_circle : Icons.radio_button_unchecked,
-                            color: _hasMinLength ? const Color(0xFF22C55E) : Colors.grey,
+                            _hasMinLength
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            color: _hasMinLength
+                                ? const Color(0xFF22C55E)
+                                : Colors.grey,
                             size: 20,
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'At least 8 characters required',
-                            style: TextStyle(fontSize: 13, color: Colors.black87),
+                            style: TextStyle(fontSize: 13, color: subdued),
                           ),
                         ],
                       ),
@@ -206,14 +217,18 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                       Row(
                         children: [
                           Icon(
-                            _passwordsMatch ? Icons.check_circle : Icons.radio_button_unchecked,
-                            color: _passwordsMatch ? const Color(0xFF22C55E) : Colors.grey,
+                            _passwordsMatch
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            color: _passwordsMatch
+                                ? const Color(0xFF22C55E)
+                                : Colors.grey,
                             size: 20,
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'Password match',
-                            style: TextStyle(fontSize: 13, color: Colors.black87),
+                            style: TextStyle(fontSize: 13, color: subdued),
                           ),
                         ],
                       ),
@@ -241,29 +256,46 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                                 newPassword: _newPasswordController.text.trim(),
                               );
                               if (!context.mounted) return;
-                              
+
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Password updated successfully')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Password updated successfully',
+                                  ),
+                                ),
                               );
                               // Pop all the way back to the first route (usually Login)
-                              Navigator.popUntil(context, (route) => route.isFirst);
+                              Navigator.popUntil(
+                                context,
+                                (route) => route.isFirst,
+                              );
                             } catch (_) {
                               if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(auth.error ?? 'Password reset failed')),
+                                SnackBar(
+                                  content: Text(
+                                    auth.error ?? 'Password reset failed',
+                                  ),
+                                ),
                               );
                             }
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D1C1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: auth.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Save Password',
-                            style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),

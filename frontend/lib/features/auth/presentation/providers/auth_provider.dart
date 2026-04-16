@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../../app/config/app_config.dart';
 import '../../../../core/network/session_store.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/models/user_profile_model.dart';
@@ -81,7 +83,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.verifyAccount(email: email, otpCode: otpCode);
+      final token = await _repository.verifyAccount(
+        email: email,
+        otpCode: otpCode,
+      );
+      _sessionStore.setToken(token);
+      _user = await _repository.getMe();
     } catch (e) {
       _error = e.toString();
       rethrow;
@@ -91,9 +98,47 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void socialLogin(String provider) {
-    _error = 'Social login endpoint is not implemented yet in backend.';
+  Future<void> socialLogin(String provider) async {
+    if (provider.toLowerCase() != 'google') {
+      _error = 'Provider non supporte: $provider';
+      notifyListeners();
+      return;
+    }
+
+    _isLoading = true;
+    _error = null;
     notifyListeners();
+
+    try {
+      final webClientId = AppConfig.googleWebClientId.trim();
+      final googleSignIn = GoogleSignIn(
+        scopes: const ['email', 'profile'],
+        serverClientId: webClientId.isEmpty ? null : webClientId,
+      );
+
+      await googleSignIn.signOut();
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        throw Exception('Connexion Google annulee');
+      }
+
+      final authentication = await account.authentication;
+      final idToken = authentication.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception('idToken Google indisponible');
+      }
+
+      final token = await _repository.loginWithGoogle(idToken: idToken);
+      _sessionStore.setToken(token);
+      _user = await _repository.getMe();
+    } catch (e) {
+      _error = e.toString();
+      _sessionStore.clear();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void logout() {
@@ -161,23 +206,26 @@ class AuthProvider extends ChangeNotifier {
         );
       } else {
         await Future<void>.delayed(const Duration(milliseconds: 500));
-        _user = (_user ?? const UserProfileModel(
-          id: 0,
-          email: '',
-          fullName: '',
-          avatarUrl: '',
-          sourceLanguage: 'fr',
-          targetLanguage: 'en',
-          totalXp: 0,
-          level: 1,
-          streak: 0,
-          weeklyXp: 0,
-          currentLeague: 'bronze',
-          role: 'student',
-        )).copyWith(
-          sourceLanguage: nativeLang,
-          targetLanguage: targetLang,
-        );
+        _user =
+            (_user ??
+                    const UserProfileModel(
+                      id: 0,
+                      email: '',
+                      fullName: '',
+                      avatarUrl: '',
+                      sourceLanguage: 'fr',
+                      targetLanguage: 'en',
+                      totalXp: 0,
+                      level: 1,
+                      streak: 0,
+                      weeklyXp: 0,
+                      currentLeague: 'bronze',
+                      role: 'user',
+                    ))
+                .copyWith(
+                  sourceLanguage: nativeLang,
+                  targetLanguage: targetLang,
+                );
       }
     } catch (e) {
       _error = e.toString();

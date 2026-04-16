@@ -40,7 +40,7 @@ class UserProfileModel {
       streak: json['streak_count'] as int? ?? 0,
       weeklyXp: json['weekly_xp'] as int? ?? 0,
       currentLeague: (json['current_league'] as String?) ?? 'bronze',
-      role: ((json['role'] as String?) ?? 'student').toLowerCase(),
+      role: ((json['role'] as String?) ?? 'user').toLowerCase(),
     );
   }
 

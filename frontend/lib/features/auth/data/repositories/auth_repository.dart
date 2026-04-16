@@ -6,10 +6,21 @@ class AuthRepository {
 
   final ApiClient _apiClient;
 
-  Future<String> login({required String email, required String password}) async {
+  Future<String> login({
+    required String email,
+    required String password,
+  }) async {
     final data = await _apiClient.postJson(
       '/auth/login',
       body: {'email': email, 'password': password},
+    );
+    return data['access_token'] as String;
+  }
+
+  Future<String> loginWithGoogle({required String idToken}) async {
+    final data = await _apiClient.postJson(
+      '/auth/auth/google',
+      body: {'idToken': idToken},
     );
     return data['access_token'] as String;
   }
@@ -21,25 +32,19 @@ class AuthRepository {
   }) async {
     await _apiClient.postJson(
       '/auth/register',
-      body: {
-        'full_name': fullName,
-        'email': email,
-        'password': password,
-      },
+      body: {'full_name': fullName, 'email': email, 'password': password},
     );
   }
 
-  Future<void> verifyAccount({
+  Future<String> verifyAccount({
     required String email,
     required String otpCode,
   }) async {
-    await _apiClient.postJson(
+    final data = await _apiClient.postJson(
       '/auth/verify-account',
-      body: {
-        'email': email,
-        'otp_code': otpCode,
-      },
+      body: {'email': email, 'otp_code': otpCode},
     );
+    return data['access_token'] as String;
   }
 
   Future<UserProfileModel> getMe() async {
@@ -66,10 +71,7 @@ class AuthRepository {
   }
 
   Future<void> forgotPassword({required String email}) async {
-    await _apiClient.postJson(
-      '/auth/forgot-password',
-      body: {'email': email},
-    );
+    await _apiClient.postJson('/auth/forgot-password', body: {'email': email});
   }
 
   Future<void> resetPassword({
@@ -79,11 +81,7 @@ class AuthRepository {
   }) async {
     await _apiClient.postJson(
       '/auth/reset-password',
-      body: {
-        'email': email,
-        'otp_code': otpCode,
-        'new_password': newPassword,
-      },
+      body: {'email': email, 'otp_code': otpCode, 'new_password': newPassword},
     );
   }
 }

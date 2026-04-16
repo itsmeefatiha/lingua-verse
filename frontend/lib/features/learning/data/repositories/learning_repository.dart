@@ -139,6 +139,18 @@ class LearningRepository {
     }
   }
 
+  Future<List<QuizAttemptModel>> fetchMyQuizAttempts() async {
+    try {
+      final attempts = await _apiClient.getList('/quiz/attempts/me');
+      return attempts
+          .map((entry) => QuizAttemptModel.fromApi(entry as Map<String, dynamic>))
+          .toList()
+        ..sort((a, b) => b.attemptedAt.compareTo(a.attemptedAt));
+    } catch (_) {
+      return <QuizAttemptModel>[];
+    }
+  }
+
   Future<void> markLessonComplete({required int lessonId}) async {
     final words = await fetchWordsForLesson(lessonId);
     for (final word in words) {

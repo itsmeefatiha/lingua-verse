@@ -6,7 +6,9 @@ import 'app/config/app_config.dart';
 import 'core/network/api_client.dart';
 import 'core/network/session_store.dart';
 import 'features/admin/data/repositories/admin_repository.dart';
-import 'features/admin/presentation/providers/admin_provider.dart';
+import 'features/admin/presentation/providers/admin_content_provider.dart';
+import 'features/admin/presentation/providers/admin_dashboard_provider.dart';
+import 'features/admin/presentation/providers/admin_user_provider.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/gamification/data/repositories/gamification_repository.dart';
@@ -40,7 +42,13 @@ void main() {
           ),
         ),
         ChangeNotifierProvider(
-          create: (context) => AdminProvider(context.read<AdminRepository>()),
+          create: (context) => AdminDashboardProvider(context.read<AdminRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => AdminContentProvider(context.read<AdminRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => AdminUserProvider(context.read<AdminRepository>()),
         ),
         ChangeNotifierProvider(
           create: (context) => LearningProvider(context.read<LearningRepository>()),

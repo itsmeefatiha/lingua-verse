@@ -126,3 +126,49 @@ class QuizSubmitResponseModel {
     );
   }
 }
+
+class QuizAttemptModel {
+  const QuizAttemptModel({
+    required this.score,
+    required this.totalQuestions,
+    required this.correctAnswers,
+    required this.languageCode,
+    required this.durationSeconds,
+    required this.levelCode,
+    required this.attemptedAt,
+    required this.submittedAnswers,
+  });
+
+  final int score;
+  final int totalQuestions;
+  final int correctAnswers;
+  final String? languageCode;
+  final int? durationSeconds;
+  final String? levelCode;
+  final DateTime attemptedAt;
+  final List<Map<String, dynamic>> submittedAnswers;
+
+  factory QuizAttemptModel.fromApi(Map<String, dynamic> json) {
+    return QuizAttemptModel(
+      score: json['score'] as int? ?? 0,
+      totalQuestions: json['total_questions'] as int? ?? 0,
+      correctAnswers: json['correct_answers'] as int? ?? 0,
+      languageCode: (json['language_code'] as String?)?.trim(),
+      durationSeconds: (json['duration_seconds'] as num?)?.toInt(),
+      levelCode: (json['level_code'] as String?)?.trim(),
+      attemptedAt: DateTime.tryParse(json['attempted_at'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      submittedAnswers: (json['submitted_answers'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
+    );
+  }
+
+  List<int> get wrongQuestionIds {
+    return submittedAnswers
+        .where((entry) => entry['is_correct'] == false)
+        .map((entry) => (entry['question_id'] as num?)?.toInt())
+        .whereType<int>()
+        .toList();
+  }
+}

@@ -1,8 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 import re
-from datetime import date
-from app.models.user import RoleEnum, LeagueEnum
+from datetime import date, datetime
+from app.models.user import RoleEnum, LeagueEnum, normalize_role_value
 
 # Inscription classique
 class UserCreate(BaseModel):
@@ -34,8 +34,16 @@ class OTPVerify(BaseModel):
 
 # Login
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
+
+    @field_validator('email')
+    @classmethod
+    def validate_login_email(cls, v: str) -> str:
+        value = v.strip()
+        if '@' not in value or value.startswith('@') or value.endswith('@'):
+            raise ValueError('Invalid email format')
+        return value
 
 # Mise à jour du profil
 class UserProfileUpdate(BaseModel):
@@ -44,13 +52,23 @@ class UserProfileUpdate(BaseModel):
     source_language: Optional[str] = None
     target_language: Optional[str] = None
 
+
+class AdminUserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    avatar_url: Optional[str] = None
+    source_language: Optional[str] = None
+    target_language: Optional[str] = None
+    role: Optional[RoleEnum] = None
+    is_active: Optional[bool] = None
+
 # Réponse standard de l'API
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     full_name: Optional[str]
     avatar_url: Optional[str]
-    role: RoleEnum
+    role: str
     source_language: str
     target_language: str
     is_active: bool
@@ -63,15 +81,47 @@ class UserResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @field_validator('role', mode='before')
+    @classmethod
+    def normalize_role(cls, v):
+        return normalize_role_value(v)
+
 
 class AdminTopUserStat(BaseModel):
     user_id: int
     full_name: Optional[str]
-    email: EmailStr
+    email: str
     total_xp: int
     current_level: int
     streak_count: int
     current_league: LeagueEnum
+
+
+class AdminUserSummary(BaseModel):
+    id: int
+    email: str
+    full_name: Optional[str]
+    avatar_url: Optional[str]
+    role: str
+    source_language: str
+    target_language: str
+    is_active: bool
+    total_xp: int
+    current_level: int
+    weekly_xp: int
+    current_league: LeagueEnum
+    streak_count: int
+    created_at: Optional[datetime] = None
+
+    @field_validator('role', mode='before')
+    @classmethod
+    def normalize_role(cls, v):
+        return normalize_role_value(v)
+
+
+class AdminLanguagePopularity(BaseModel):
+    language_code: str
+    duration_minutes: float
 
 
 class AdminDashboardStatsResponse(BaseModel):
@@ -79,14 +129,16 @@ class AdminDashboardStatsResponse(BaseModel):
     active_users: int
     inactive_users: int
     admin_users: int
-    teacher_users: int
-    student_users: int
+    user_users: int
     total_xp_distributed: int
     average_xp: float
+    average_time_spent_minutes: float
+    total_lessons_completed: int
     bronze_users: int
     argent_users: int
     or_users: int
     top_users: list[AdminTopUserStat]
+    popular_languages: list[AdminLanguagePopularity]
 
 # Réinitialisation Mot de passe
 class PasswordResetRequest(BaseModel):

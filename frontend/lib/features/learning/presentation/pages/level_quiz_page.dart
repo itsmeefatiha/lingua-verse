@@ -22,6 +22,7 @@ class _LevelQuizPageState extends State<LevelQuizPage> {
   bool _speechReady = false;
   bool _isListening = false;
   int? _listeningQuestionId;
+  bool _loadingPreviousWrongAnswers = true;
 
   static const Map<String, String> _languageLocaleIds = {
     'en': 'en_US',
@@ -39,38 +40,47 @@ class _LevelQuizPageState extends State<LevelQuizPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final auth = context.read<AuthProvider>();
-      final languageCode = auth.user?.targetLanguage.trim().toLowerCase();
-      await context.read<LearningProvider>().loadQuiz(
-            levelCode: widget.level.name,
-            languageCode: languageCode,
-            count: 8,
-          );
-      if (!mounted) {
-        return;
-      }
-      _speechReady = await _speechToText.initialize(
-        onStatus: (status) {
-          if (status == 'done' || status == 'notListening') {
+      try {
+        final auth = context.read<AuthProvider>();
+        final languageCode = auth.user?.targetLanguage.trim().toLowerCase();
+        await context.read<LearningProvider>().loadQuiz(
+              levelCode: widget.level.name,
+              languageCode: languageCode,
+              count: 8,
+            );
+        await context.read<LearningProvider>().loadPreviousWrongAnswers(levelCode: widget.level.name);
+        if (!mounted) {
+          return;
+        }
+        _speechReady = await _speechToText.initialize(
+          onStatus: (status) {
+            if (status == 'done' || status == 'notListening') {
+              if (mounted) {
+                setState(() {
+                  _isListening = false;
+                  _listeningQuestionId = null;
+                });
+              }
+            }
+          },
+          onError: (error) {
             if (mounted) {
               setState(() {
                 _isListening = false;
                 _listeningQuestionId = null;
               });
             }
-          }
-        },
-        onError: (error) {
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-              _listeningQuestionId = null;
-            });
-          }
-        },
-      );
-      if (mounted) {
-        setState(() {});
+          },
+        );
+        if (mounted) {
+          setState(() {});
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _loadingPreviousWrongAnswers = false;
+          });
+        }
       }
     });
   }
@@ -91,11 +101,13 @@ class _LevelQuizPageState extends State<LevelQuizPage> {
       return;
     }
 
-    final passed = await learning.submitLevelQuiz(
+    final response = await learning.submitLevelQuiz(
       levelId: widget.level.id,
       answers: _answers,
       durationSeconds: 120,
     );
+
+    final passed = (response?.score ?? 0) >= 80;
 
     if (!mounted) {
       return;
@@ -105,10 +117,19 @@ class _LevelQuizPageState extends State<LevelQuizPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text(passed ? 'Level unlocked' : 'Try again'),
-        content: Text(
-          passed
-              ? 'Quiz passed. The next level is now unlocked.'
-              : 'Quiz not passed yet. You need at least 80%.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              passed
+                  ? 'Quiz passed. The next level is now unlocked.'
+                  : 'Quiz not passed yet. You need at least 80%.',
+            ),
+            const SizedBox(height: 8),
+            Text('Score: ${(response?.score ?? 0).toStringAsFixed(0)}/100'),
+            Text('Correct answers: ${response?.correctAnswers ?? 0}/${response?.totalQuestions ?? questions.length}'),
+          ],
         ),
         actions: [
           TextButton(
@@ -119,8 +140,8 @@ class _LevelQuizPageState extends State<LevelQuizPage> {
       ),
     );
 
-    if (mounted) {
-      Navigator.of(context).pop();
+    if (mounted && passed) {
+      Navigator.of(context).pop(true);
     }
   }
 
@@ -177,10 +198,11 @@ class _LevelQuizPageState extends State<LevelQuizPage> {
   Widget build(BuildContext context) {
     final learning = context.watch<LearningProvider>();
     final questions = learning.quizQuestions;
+    final wrongQuestionIds = learning.wrongQuestionIdsForLevel(widget.level.name);
 
     return Scaffold(
       appBar: AppBar(title: Text('${widget.level.name} Quiz')),
-      body: learning.isLoadingQuiz && questions.isEmpty
+        body: (learning.isLoadingQuiz || _loadingPreviousWrongAnswers) && questions.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -201,6 +223,7 @@ class _LevelQuizPageState extends State<LevelQuizPage> {
                   (question) => _QuestionCard(
                     question: question,
                     selectedAnswer: _answers[question.id],
+                    isPreviouslyWrong: wrongQuestionIds.contains(question.id),
                     isListening: _isListening && _listeningQuestionId == question.id,
                     speechReady: _speechReady,
                     onAnswer: (answer) {
@@ -231,6 +254,7 @@ class _QuestionCard extends StatelessWidget {
   const _QuestionCard({
     required this.question,
     required this.selectedAnswer,
+    required this.isPreviouslyWrong,
     required this.isListening,
     required this.speechReady,
     required this.onAnswer,
@@ -240,6 +264,7 @@ class _QuestionCard extends StatelessWidget {
 
   final QuizQuestionModel question;
   final String? selectedAnswer;
+  final bool isPreviouslyWrong;
   final bool isListening;
   final bool speechReady;
   final ValueChanged<String> onAnswer;
@@ -250,14 +275,35 @@ class _QuestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final choices = question.choices.isEmpty ? <String>[question.correctAnswer] : question.choices;
 
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
+      color: isPreviouslyWrong ? scheme.errorContainer.withOpacity(0.35) : null,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(
+          color: isPreviouslyWrong ? scheme.error : theme.dividerColor,
+          width: isPreviouslyWrong ? 1.4 : 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(question.text, style: Theme.of(context).textTheme.titleMedium),
+            Text(question.text, style: theme.textTheme.titleMedium),
+            if (isPreviouslyWrong) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Previously answered incorrectly',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             switch (question.type) {
               QuizQuestionType.multipleChoice => Column(

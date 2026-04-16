@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import 'login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -60,13 +61,13 @@ class _ProfilePageState extends State<ProfilePage> {
         targetLanguage: _targetLanguage,
       );
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully')),
       );
     } catch (_) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error ?? 'Profile update failed')),
       );
@@ -77,10 +78,13 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subdued = scheme.onSurface.withOpacity(0.8);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
 
     if (user == null) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
+      return Scaffold(
         body: Center(child: Text('Please log in to view your profile.')),
       );
     }
@@ -88,35 +92,32 @@ class _ProfilePageState extends State<ProfilePage> {
     // Shared Input Decoration to match previous screens
     final inputDecoration = InputDecoration(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: scheme.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.black12),
+        borderSide: BorderSide(color: borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.black12),
+        borderSide: BorderSide(color: borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF00D1C1), width: 2),
+        borderSide: BorderSide(color: scheme.primary, width: 2),
       ),
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
+        title: Text(
           'Profile',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: scheme.onSurface,
           ),
         ),
         actions: [
@@ -129,14 +130,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00D1C1)),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF00D1C1),
+                      ),
                     )
-                  : const Text(
+                  : Text(
                       'Save',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF00D1C1), // Teal accent color
+                        color: scheme.primary,
                       ),
                     ),
             ),
@@ -157,14 +161,22 @@ class _ProfilePageState extends State<ProfilePage> {
                       height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFFF8F9FA),
-                        border: Border.all(color: Colors.black12, width: 2),
+                        color: scheme.surface,
+                        border: Border.all(color: borderColor, width: 2),
                       ),
                       child: _buildAvatarImage(_avatarUrl.trim()) == null
                           ? Center(
                               child: Text(
-                                user.fullName.isEmpty ? 'U' : user.fullName.substring(0, 1).toUpperCase(),
-                                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black54),
+                                user.fullName.isEmpty
+                                    ? 'U'
+                                    : user.fullName
+                                          .substring(0, 1)
+                                          .toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: subdued,
+                                ),
                               ),
                             )
                           : ClipOval(
@@ -184,9 +196,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF00D1C1), // Teal edit button
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(color: scheme.surface, width: 2),
                           ),
-                          child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                          child: const Icon(
+                            Icons.edit,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -203,11 +219,20 @@ class _ProfilePageState extends State<ProfilePage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Full Name', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+                  Text(
+                    'Full Name',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: subdued,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _nameController,
-                    decoration: inputDecoration.copyWith(hintText: 'Enter your name'),
+                    decoration: inputDecoration.copyWith(
+                      hintText: 'Enter your name',
+                    ),
                   ),
                 ],
               ),
@@ -217,16 +242,32 @@ class _ProfilePageState extends State<ProfilePage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Native Language', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+                  Text(
+                    'Native Language',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: subdued,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _sourceLanguage,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey,
+                    ),
                     decoration: inputDecoration,
                     items: languages
-                        .map((lang) => DropdownMenuItem(value: lang.code, child: Text(lang.label)))
+                        .map(
+                          (lang) => DropdownMenuItem(
+                            value: lang.code,
+                            child: Text(lang.label),
+                          ),
+                        )
                         .toList(),
-                    onChanged: (value) => setState(() => _sourceLanguage = value ?? 'fr'),
+                    onChanged: (value) =>
+                        setState(() => _sourceLanguage = value ?? 'fr'),
                   ),
                 ],
               ),
@@ -236,16 +277,32 @@ class _ProfilePageState extends State<ProfilePage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Learning Language', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87)),
+                  Text(
+                    'Learning Language',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: subdued,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _targetLanguage,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey,
+                    ),
                     decoration: inputDecoration,
                     items: languages
-                        .map((lang) => DropdownMenuItem(value: lang.code, child: Text(lang.label)))
+                        .map(
+                          (lang) => DropdownMenuItem(
+                            value: lang.code,
+                            child: Text(lang.label),
+                          ),
+                        )
                         .toList(),
-                    onChanged: (value) => setState(() => _targetLanguage = value ?? 'en'),
+                    onChanged: (value) =>
+                        setState(() => _targetLanguage = value ?? 'en'),
                   ),
                 ],
               ),
@@ -254,12 +311,18 @@ class _ProfilePageState extends State<ProfilePage> {
               // Dark Mode Toggle
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black12),
+                  border: Border.all(color: borderColor),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: SwitchListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w500)),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 4,
+                  ),
+                  title: const Text(
+                    'Dark Mode',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                   activeColor: const Color(0xFF00D1C1),
                   value: auth.themeMode == ThemeMode.dark,
                   onChanged: auth.toggleTheme,
@@ -272,15 +335,30 @@ class _ProfilePageState extends State<ProfilePage> {
                 width: double.infinity,
                 height: 60,
                 child: OutlinedButton.icon(
-                  onPressed: auth.logout,
+                  onPressed: () {
+                    auth.logout();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                      (route) => false,
+                    );
+                  },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.redAccent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: Colors.redAccent,
+                  ),
                   label: const Text(
                     'Logout',
-                    style: TextStyle(fontSize: 16, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -300,12 +378,18 @@ class _ProfilePageState extends State<ProfilePage> {
       return normalized;
     }
     switch (normalized) {
-      case 'french': return 'fr';
-      case 'english': return 'en';
-      case 'spanish': return 'es';
-      case 'german': return 'de';
-      case 'arabic': return 'ar';
-      default: return fallback;
+      case 'french':
+        return 'fr';
+      case 'english':
+        return 'en';
+      case 'spanish':
+        return 'es';
+      case 'german':
+        return 'de';
+      case 'arabic':
+        return 'ar';
+      default:
+        return fallback;
     }
   }
 
@@ -324,7 +408,9 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not pick image on this device/browser.')),
+        const SnackBar(
+          content: Text('Could not pick image on this device/browser.'),
+        ),
       );
     }
   }
@@ -333,14 +419,19 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_selectedAvatarBytes != null && _selectedAvatarBytes!.isNotEmpty) {
       return MemoryImage(_selectedAvatarBytes!);
     }
-    if (avatarValue.isEmpty) return null;
+    final trimmed = avatarValue.trim();
+    if (trimmed.isEmpty) return null;
 
-    final dataUriBytes = _avatarBytesFromStoredValue(avatarValue);
+    final dataUriBytes = _avatarBytesFromStoredValue(trimmed);
     if (dataUriBytes != null) return MemoryImage(dataUriBytes);
 
-    if (avatarValue.startsWith('http://') || avatarValue.startsWith('https://')) {
-      return NetworkImage(avatarValue);
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return NetworkImage(trimmed);
     }
+
+    final rawBase64Bytes = _avatarBytesFromRawBase64(trimmed);
+    if (rawBase64Bytes != null) return MemoryImage(rawBase64Bytes);
+
     return null;
   }
 
@@ -355,6 +446,31 @@ class _ProfilePageState extends State<ProfilePage> {
       return null;
     }
   }
+
+  Uint8List? _avatarBytesFromRawBase64(String raw) {
+    final normalized = raw.replaceAll(RegExp(r'\s+'), '');
+    if (normalized.length < 64) return null;
+    if (!RegExp(r'^[A-Za-z0-9+/=_-]+$').hasMatch(normalized)) return null;
+
+    final padded = _padBase64(normalized);
+    try {
+      return base64Decode(padded);
+    } catch (_) {
+      try {
+        return base64Url.decode(padded);
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  String _padBase64(String value) {
+    final remainder = value.length % 4;
+    if (remainder == 0) {
+      return value;
+    }
+    return value + '=' * (4 - remainder);
+  }
 }
 
 class _LanguageOption {
@@ -367,20 +483,24 @@ class _LanguageOption {
 class _ProfileStatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final borderColor = theme.dividerColor.withOpacity(0.5);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA), // Very light gray for distinction
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           const _StatItem(label: 'Progress', value: '68%'),
-          Container(height: 40, width: 1, color: Colors.black12), // Divider
+          Container(height: 40, width: 1, color: borderColor),
           const _StatItem(label: 'Time Spent', value: '12h'),
-          Container(height: 40, width: 1, color: Colors.black12), // Divider
+          Container(height: 40, width: 1, color: borderColor),
           const _StatItem(label: 'Words', value: '320'),
         ],
       ),
@@ -396,24 +516,26 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF00D1C1), // Teal color for values
+            color: scheme.primary,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Colors.black54,
+            color: scheme.onSurface.withOpacity(0.7),
           ),
         ),
       ],
