@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -77,15 +80,20 @@ class _AdminUserManagementPageState extends State<AdminUserManagementPage> {
               ...admin.users.map(
                 (user) => Card(
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF00D1C1).withOpacity(0.12),
-                      backgroundImage: user.avatarUrl.trim().isNotEmpty ? NetworkImage(user.avatarUrl.trim()) : null,
-                      child: user.avatarUrl.trim().isEmpty
-                          ? Text(
-                              user.fullName.isNotEmpty ? user.fullName.substring(0, 1).toUpperCase() : '?',
-                              style: const TextStyle(color: Color(0xFF00A99A), fontWeight: FontWeight.bold),
-                            )
-                          : null,
+                    leading: Builder(
+                      builder: (context) {
+                        final avatarImage = _buildAvatarImage(user.avatarUrl.trim());
+                        return CircleAvatar(
+                          backgroundColor: const Color(0xFF00D1C1).withOpacity(0.12),
+                          backgroundImage: avatarImage,
+                          child: avatarImage == null
+                              ? Text(
+                                  user.fullName.isNotEmpty ? user.fullName.substring(0, 1).toUpperCase() : '?',
+                                  style: const TextStyle(color: Color(0xFF00A99A), fontWeight: FontWeight.bold),
+                                )
+                              : null,
+                        );
+                      },
                     ),
                     title: Text(user.fullName),
                     subtitle: Text('${user.email}\n${user.role} • ${user.currentLeague} • ${user.totalXp} XP'),
@@ -206,5 +214,63 @@ class _AdminUserManagementPageState extends State<AdminUserManagementPage> {
         ],
       ),
     );
+  }
+
+  ImageProvider<Object>? _buildAvatarImage(String avatarValue) {
+    final trimmed = avatarValue.trim();
+    if (trimmed.isEmpty) return null;
+
+    final dataUriBytes = _avatarBytesFromStoredValue(trimmed);
+    if (dataUriBytes != null) {
+      return MemoryImage(dataUriBytes);
+    }
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return NetworkImage(trimmed);
+    }
+
+    final rawBase64Bytes = _avatarBytesFromRawBase64(trimmed);
+    if (rawBase64Bytes != null) {
+      return MemoryImage(rawBase64Bytes);
+    }
+
+    return null;
+  }
+
+  Uint8List? _avatarBytesFromStoredValue(String raw) {
+    if (!raw.startsWith('data:image')) return null;
+    final commaIndex = raw.indexOf(',');
+    if (commaIndex < 0 || commaIndex + 1 >= raw.length) return null;
+    final encoded = raw.substring(commaIndex + 1);
+    try {
+      return base64Decode(encoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Uint8List? _avatarBytesFromRawBase64(String raw) {
+    final normalized = raw.replaceAll(RegExp(r'\s+'), '');
+    if (normalized.length < 64) return null;
+    if (!RegExp(r'^[A-Za-z0-9+/=_-]+$').hasMatch(normalized)) return null;
+
+    final padded = _padBase64(normalized);
+    try {
+      return base64Decode(padded);
+    } catch (_) {
+      try {
+        return base64Url.decode(padded);
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  String _padBase64(String value) {
+    final remainder = value.length % 4;
+    if (remainder == 0) {
+      return value;
+    }
+    return value + '=' * (4 - remainder);
   }
 }

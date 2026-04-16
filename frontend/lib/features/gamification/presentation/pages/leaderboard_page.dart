@@ -13,10 +13,12 @@ class LeaderboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gamification = context.watch<GamificationProvider>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subdued = scheme.onSurface.withOpacity(0.75);
 
     if (gamification.isLoading && gamification.entries.isEmpty) {
       return const Scaffold(
-        backgroundColor: Colors.white,
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF00D1C1)),
         ),
@@ -33,18 +35,15 @@ class LeaderboardPage extends StatelessWidget {
       });
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
+        title: Text(
           'Leaderboard',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: scheme.onSurface,
           ),
         ),
       ),
@@ -59,27 +58,25 @@ class LeaderboardPage extends StatelessWidget {
                 style: const TextStyle(color: Colors.redAccent),
               ),
             ),
-            
+
           // Top description
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
             child: Text(
               "Compete with learners worldwide.\nEarn XP by completing lessons and quizzes!",
-              style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.5),
+              style: TextStyle(fontSize: 14, color: subdued, height: 1.5),
             ),
           ),
           const SizedBox(height: 10),
 
           Expanded(
             child: entries.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No users available yet.',
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  )
+                ? const Center(child: Text('No users available yet.'))
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     itemCount: entries.length,
                     itemBuilder: (context, index) {
                       final entry = entries[index];
@@ -120,29 +117,50 @@ class _LeaderboardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subdued = scheme.onSurface.withOpacity(0.75);
+
     final avatar = _avatarImage(entry.avatarUrl);
     final isTop3 = entry.rank <= 3;
+    final top3TextColor = isTop3 ? Colors.black : subdued;
 
     // Define styles based on rank
-    Color borderColor = Colors.black12;
-    Color backgroundColor = Colors.white;
+    Color borderColor = theme.dividerColor.withOpacity(0.6);
+    Color backgroundColor = scheme.surface;
     Widget rankIndicator = Text(
       '${entry.rank}',
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black54),
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: subdued,
+      ),
     );
 
     if (entry.rank == 1) {
       borderColor = const Color(0xFFFFD700); // Gold
       backgroundColor = const Color(0xFFFFFDF0); // Very light gold tint
-      rankIndicator = const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD700), size: 28);
+      rankIndicator = const Icon(
+        Icons.workspace_premium_rounded,
+        color: Color(0xFFFFD700),
+        size: 28,
+      );
     } else if (entry.rank == 2) {
       borderColor = const Color(0xFFC0C0C0); // Silver
       backgroundColor = const Color(0xFFF8F9FA); // Very light grey tint
-      rankIndicator = const Icon(Icons.workspace_premium_rounded, color: Color(0xFFC0C0C0), size: 28);
+      rankIndicator = const Icon(
+        Icons.workspace_premium_rounded,
+        color: Color(0xFFC0C0C0),
+        size: 28,
+      );
     } else if (entry.rank == 3) {
       borderColor = const Color(0xFFCD7F32); // Bronze
       backgroundColor = const Color(0xFFFFF9F5); // Very light bronze tint
-      rankIndicator = const Icon(Icons.workspace_premium_rounded, color: Color(0xFFCD7F32), size: 28);
+      rankIndicator = const Icon(
+        Icons.workspace_premium_rounded,
+        color: Color(0xFFCD7F32),
+        size: 28,
+      );
     }
 
     return Container(
@@ -151,10 +169,7 @@ class _LeaderboardTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-          width: isTop3 ? 2 : 1,
-        ),
+        border: Border.all(color: borderColor, width: isTop3 ? 2 : 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -166,10 +181,7 @@ class _LeaderboardTile extends StatelessWidget {
       child: Row(
         children: [
           // 1. Rank Indicator (Number or Crown)
-          SizedBox(
-            width: 30,
-            child: Center(child: rankIndicator),
-          ),
+          SizedBox(width: 30, child: Center(child: rankIndicator)),
           const SizedBox(width: 12),
 
           // 2. Avatar
@@ -187,8 +199,13 @@ class _LeaderboardTile extends StatelessWidget {
               backgroundImage: avatar,
               child: avatar == null
                   ? Text(
-                      entry.fullName.isNotEmpty ? entry.fullName.substring(0, 1).toUpperCase() : '?',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                      entry.fullName.isNotEmpty
+                          ? entry.fullName.substring(0, 1).toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: top3TextColor,
+                      ),
                     )
                   : null,
             ),
@@ -204,19 +221,16 @@ class _LeaderboardTile extends StatelessWidget {
                   entry.fullName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: isTop3 ? Colors.black : null,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Level ${entry.currentLevel} • ${entry.totalXp} XP total',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 13, color: top3TextColor),
                 ),
               ],
             ),
@@ -226,9 +240,13 @@ class _LeaderboardTile extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
+              Text(
                 'This Week',
-                style: TextStyle(fontSize: 10, color: Colors.black38, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isTop3 ? Colors.black : subdued.withOpacity(0.8),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 2),
               Text(

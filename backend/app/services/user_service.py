@@ -12,14 +12,12 @@ from app.core.security import get_password_hash, generate_otp, verify_password
 logger = logging.getLogger(__name__)
 
 def _verify_otp(submitted_otp: str, stored_otp_value: str | None) -> bool:
-    """Verifies the OTP, falling back to direct comparison for legacy plain-text OTPs."""
+    """Verifies the OTP using direct string comparison (OTPs are temporary and short-lived)."""
     if not stored_otp_value:
         return False
-
-    try:
-        return verify_password(submitted_otp, stored_otp_value)
-    except Exception:
-        return submitted_otp == stored_otp_value
+    
+    # Direct comparison for OTP (no hashing needed for 6-digit temporary codes)
+    return submitted_otp.strip() == stored_otp_value.strip()
 
 def _is_otp_valid(user: User | None, otp_code: str) -> bool:
     """Helper function to validate user existence, OTP correctness, and expiration."""
@@ -43,7 +41,7 @@ def create_user(db: Session, user_in: UserCreate) -> tuple[User, str]:
         email=user_in.email,
         hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name,
-        otp_code=get_password_hash(otp),
+        otp_code=otp,  # Store plain text OTP
         otp_expiry=otp_expiry,
         is_active=False
     )
@@ -56,17 +54,18 @@ def create_user(db: Session, user_in: UserCreate) -> tuple[User, str]:
     
     return db_user, otp
 
-def activate_user(db: Session, email: str, otp_code: str) -> bool:
+def activate_user(db: Session, email: str, otp_code: str) -> User | None:
     user = get_user_by_email(db, email)
     
     if not _is_otp_valid(user, otp_code):
-        return False
+        return None
     
     user.is_active = True
     user.otp_code = None
     user.otp_expiry = None
     db.commit()
-    return True
+    db.refresh(user)
+    return user
 
 def update_profile(db: Session, user: User, profile_in: UserProfileUpdate) -> User:
     update_data = profile_in.model_dump(exclude_unset=True)
@@ -81,12 +80,14 @@ def create_password_reset_otp(db: Session, user: User) -> str:
     """Génère un OTP de réinitialisation et l'assigne à l'utilisateur."""
     otp = generate_otp()
     
-    user.otp_code = get_password_hash(otp)
+    user.otp_code = otp  # Store plain text OTP
     user.otp_expiry = datetime.now(timezone.utc) + timedelta(minutes=15)
     db.commit()
     
     # TESTING ONLY: Log the plain-text OTP. Remove before production!
     logger.info(f"Password reset OTP generated: {otp}", extra={"email": user.email})
+    
+    return otp
     
     return otp
 

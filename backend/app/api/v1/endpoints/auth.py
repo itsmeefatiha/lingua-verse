@@ -75,9 +75,12 @@ def register(user_in: UserCreate, background_tasks: BackgroundTasks, db: Session
 
 @router.post("/verify-account")
 def verify_account(data: OTPVerify, db: Session = Depends(get_db)):
-    if not user_service.activate_user(db, data.email, data.otp_code):
+    user = user_service.activate_user(db, data.email, data.otp_code)
+    if not user:
         raise HTTPException(status_code=400, detail="OTP invalide ou expiré")
-    return {"msg": "Compte activé avec succès"}
+    
+    access_token = create_access_token(subject=user.id)
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login")
 def login(request: LoginRequest, db: Session = Depends(get_db)):

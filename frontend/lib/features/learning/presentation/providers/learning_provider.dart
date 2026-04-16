@@ -17,6 +17,7 @@ class LearningProvider extends ChangeNotifier {
   final Map<int, List<LearningWord>> _wordsByLesson = {};
   final Map<String, Set<int>> _completedLessonIdsByLanguage = {};
   final Map<String, Set<int>> _passedLevelIdsByLanguage = {};
+  final Map<String, Set<int>> _wrongQuestionIdsByLevel = {};
 
   List<LevelModel> _levels = const [];
   List<QuizQuestionModel> _quizQuestions = const [];
@@ -39,6 +40,7 @@ class LearningProvider extends ChangeNotifier {
   List<LearningWord> wordsForLesson(int lessonId) => _wordsByLesson[lessonId] ?? const [];
   bool isLevelLocked(LearningLevel level) => level.isLocked;
   bool isLevelCompleted(LearningLevel level) => level.isCompleted;
+  Set<int> wrongQuestionIdsForLevel(String levelCode) => _wrongQuestionIdsByLevel[_normalizeLevelCode(levelCode)] ?? const <int>{};
 
   Future<void> fetchLanguages({String? preferredLanguageCode}) async {
     _isLoadingCatalog = true;
@@ -194,6 +196,25 @@ class LearningProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadPreviousWrongAnswers({required String levelCode}) async {
+    final normalizedLevelCode = _normalizeLevelCode(levelCode);
+    final attempts = await _repository.fetchMyQuizAttempts();
+    QuizAttemptModel? latestAttempt;
+    for (final attempt in attempts) {
+      if (_normalizeLevelCode(attempt.levelCode ?? '') == normalizedLevelCode) {
+        latestAttempt = attempt;
+        break;
+      }
+    }
+
+    _wrongQuestionIdsByLevel[normalizedLevelCode] = (latestAttempt?.submittedAnswers ?? const [])
+        .where((entry) => entry['is_correct'] == false)
+        .map((entry) => (entry['question_id'] as num?)?.toInt())
+        .whereType<int>()
+        .toSet();
+    notifyListeners();
+  }
+
   Future<void> markLessonComplete(LearningLesson lesson) async {
     final code = _activeLanguageCode;
     if (code == null) {
@@ -212,14 +233,14 @@ class LearningProvider extends ChangeNotifier {
     await fetchLevelsForLanguage(languageCode: code);
   }
 
-  Future<bool> submitLevelQuiz({
+  Future<QuizSubmitResponseModel?> submitLevelQuiz({
     required int levelId,
     required Map<int, String> answers,
     required int durationSeconds,
   }) async {
     final code = _activeLanguageCode;
     if (code == null) {
-      return false;
+      return null;
     }
 
     final level = (_levelsByLanguage[code] ?? const <LearningLevel>[]).firstWhere(
@@ -234,7 +255,7 @@ class LearningProvider extends ChangeNotifier {
       ),
     );
     if (level.id == 0) {
-      return false;
+      return null;
     }
 
     final response = await _repository.submitLevelQuiz(
@@ -251,7 +272,7 @@ class LearningProvider extends ChangeNotifier {
     }
 
     await fetchLevelsForLanguage(languageCode: code);
-    return passed;
+    return response;
   }
 
   String _normalizeLevelCode(String levelName) {
@@ -320,6 +341,7 @@ class LearningProvider extends ChangeNotifier {
     _wordsByLesson.clear();
     _completedLessonIdsByLanguage.clear();
     _passedLevelIdsByLanguage.clear();
+    _wrongQuestionIdsByLevel.clear();
     _levels = const [];
     _quizQuestions = const [];
     _isLoadingCatalog = false;

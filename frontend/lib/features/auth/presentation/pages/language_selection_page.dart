@@ -47,8 +47,9 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
     final detected = _detectNativeLanguage();
     _nativeLanguage = detected;
     _targetLanguage ??= _languages.firstWhere(
-        (language) => language != detected,
-        orElse: () => 'English');
+      (language) => language != detected,
+      orElse: () => 'English',
+    );
   }
 
   String _detectNativeLanguage() {
@@ -62,9 +63,12 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subdued = scheme.onSurface.withOpacity(0.8);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
 
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
@@ -82,26 +86,26 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
               const SizedBox(height: 40),
 
               // Title
-              const Text(
+              Text(
                 "Speak the World's\nLanguages",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: scheme.onSurface,
                   height: 1.2,
                 ),
               ),
               const SizedBox(height: 16),
 
               // Subtitle
-              const Text(
+              Text(
                 "Break down barriers. Connect with the world\nthrough smart AI tutoring and real-world AR\nvocabulary.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
-                  color: Colors.black87,
+                  color: subdued,
                   height: 1.5,
                 ),
               ),
@@ -115,33 +119,48 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
                     // Native Language Dropdown
                     DropdownButtonFormField<String>(
                       initialValue: _nativeLanguage,
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Colors.grey,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Native Language',
-                        labelStyle: const TextStyle(color: Colors.black54),
+                        labelStyle: TextStyle(color: subdued),
                         filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        fillColor: scheme.surface,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.black12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.black12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Color(0xFF00D1C1), width: 2),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF00D1C1),
+                            width: 2,
+                          ),
                         ),
                       ),
                       items: _languages
-                          .map((language) => DropdownMenuItem(
-                                value: language,
-                                child: Text(language, style: const TextStyle(color: Colors.black87)),
-                              ))
+                          .map(
+                            (language) => DropdownMenuItem(
+                              value: language,
+                              child: Text(
+                                language,
+                                style: TextStyle(color: subdued),
+                              ),
+                            ),
+                          )
                           .toList(),
-                      onChanged: (value) => setState(() => _nativeLanguage = value),
+                      onChanged: (value) =>
+                          setState(() => _nativeLanguage = value),
                       validator: (value) => value == null ? 'Required' : null,
                     ),
                     const SizedBox(height: 20),
@@ -149,33 +168,48 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
                     // Target Language Dropdown
                     DropdownButtonFormField<String>(
                       initialValue: _targetLanguage,
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Colors.grey,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Language you want to learn',
-                        labelStyle: const TextStyle(color: Colors.black54),
+                        labelStyle: TextStyle(color: subdued),
                         filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        fillColor: scheme.surface,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.black12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.black12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Color(0xFF00D1C1), width: 2),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF00D1C1),
+                            width: 2,
+                          ),
                         ),
                       ),
                       items: _languages
-                          .map((language) => DropdownMenuItem(
-                                value: language,
-                                child: Text(language, style: const TextStyle(color: Colors.black87)),
-                              ))
+                          .map(
+                            (language) => DropdownMenuItem(
+                              value: language,
+                              child: Text(
+                                language,
+                                style: TextStyle(color: subdued),
+                              ),
+                            ),
+                          )
                           .toList(),
-                      onChanged: (value) => setState(() => _targetLanguage = value),
+                      onChanged: (value) =>
+                          setState(() => _targetLanguage = value),
                       validator: (value) => value == null ? 'Required' : null,
                     ),
                     const SizedBox(height: 40),
@@ -196,7 +230,9 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
                                 if (_nativeLanguage == _targetLanguage) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Native language and target language cannot be the same.'),
+                                      content: Text(
+                                        'Native language and target language cannot be the same.',
+                                      ),
                                     ),
                                   );
                                   return;
@@ -208,29 +244,44 @@ class _LanguageSelectionPageState extends State<LanguageSelectionPage> {
                                     _targetLanguage!,
                                   );
                                   if (!context.mounted) return;
-                                  
+
                                   Navigator.pushReplacement(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const MainShellPage()),
+                                    MaterialPageRoute(
+                                      builder: (_) => const MainShellPage(),
+                                    ),
                                   );
                                 } catch (_) {
                                   if (!context.mounted) return;
-                                  
+
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(auth.error ?? 'Could not update languages')),
+                                    SnackBar(
+                                      content: Text(
+                                        auth.error ??
+                                            'Could not update languages',
+                                      ),
+                                    ),
                                   );
                                 }
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF00D1C1),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 0,
                         ),
                         child: auth.isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text(
                                 'Start Learning',
-                                style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                       ),
                     ),

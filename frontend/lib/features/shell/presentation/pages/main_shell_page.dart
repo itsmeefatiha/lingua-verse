@@ -31,7 +31,9 @@ class _MainShellPageState extends State<MainShellPage> {
     _loaded = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final targetLanguage = context.read<AuthProvider>().user?.targetLanguage;
-      context.read<LearningProvider>().fetchLanguages(preferredLanguageCode: targetLanguage);
+      context.read<LearningProvider>().fetchLanguages(
+            preferredLanguageCode: targetLanguage,
+          );
       context.read<ProgressProvider>().loadDashboard();
       context.read<GamificationProvider>().loadLeaderboard();
       context.read<AuthProvider>().refreshMe();
@@ -45,34 +47,88 @@ class _MainShellPageState extends State<MainShellPage> {
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
         actions: [
-          _TopStat(icon: Icons.bolt_rounded, label: '${user?.totalXp ?? 0} XP'),
-          _TopStat(icon: Icons.local_fire_department_rounded, label: '${user?.streak ?? 0}'),
-          _TopStat(icon: Icons.workspace_premium_rounded, label: 'Lv ${user?.level ?? 1}'),
-          const SizedBox(width: 8),
+          _TopStat(
+            icon: Icons.bolt_rounded, 
+            label: '${user?.totalXp ?? 0} XP',
+            iconColor: Colors.orangeAccent, // Restored Orange Accent
+          ),
+          _TopStat(
+            icon: Icons.local_fire_department_rounded,
+            label: '${user?.streak ?? 0}',
+            iconColor: Colors.redAccent, // Restored Red Accent
+          ),
+          const SizedBox(width: 12),
         ],
       ),
-      body: const AnimatedSwitcher(
-        duration: Duration(milliseconds: 280),
-        child: _ShellBody(),
+      extendBodyBehindAppBar: false,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        child: _ShellBody(key: ValueKey(shell.index)),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: shell.index,
-        onDestinationSelected: shell.setIndex,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Lessons'),
-          NavigationDestination(icon: Icon(Icons.view_in_ar_outlined), label: 'AR'),
-          NavigationDestination(icon: Icon(Icons.leaderboard_outlined), label: 'Leaderboard'),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).dividerColor.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+        ),
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            height: 70, 
+            indicatorShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return const TextStyle(fontSize: 11, fontWeight: FontWeight.w700);
+              }
+              return const TextStyle(fontSize: 11, fontWeight: FontWeight.w500);
+            }),
+          ),
+          child: NavigationBar(
+            elevation: 0,
+            selectedIndex: shell.index,
+            onDestinationSelected: shell.setIndex,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.menu_book_outlined),
+                label: 'Lessons',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.view_in_ar_outlined),
+                label: 'AR',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.leaderboard_outlined),
+                label: 'Leaderboard',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
 class _ShellBody extends StatelessWidget {
-  const _ShellBody();
+  const _ShellBody({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -95,18 +151,47 @@ class _ShellBody extends StatelessWidget {
 }
 
 class _TopStat extends StatelessWidget {
-  const _TopStat({required this.icon, required this.label});
+  const _TopStat({
+    required this.icon, 
+    required this.label, 
+    this.iconColor, // Added optional color parameter
+  });
 
   final IconData icon;
   final String label;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: Chip(
-        avatar: Icon(icon, size: 16),
-        label: Text(label),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Uses the provided iconColor, or falls back to theme secondary color
+            Icon(icon, size: 16, color: iconColor ?? colorScheme.secondary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

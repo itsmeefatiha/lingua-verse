@@ -8,7 +8,8 @@ class ForgotPasswordEmailPage extends StatefulWidget {
   const ForgotPasswordEmailPage({super.key});
 
   @override
-  State<ForgotPasswordEmailPage> createState() => _ForgotPasswordEmailPageState();
+  State<ForgotPasswordEmailPage> createState() =>
+      _ForgotPasswordEmailPageState();
 }
 
 class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
@@ -24,14 +25,13 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subdued = scheme.onSurface.withOpacity(0.8);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      appBar: AppBar(elevation: 0),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
@@ -40,22 +40,18 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Forgot Password',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Enter your registered email address to\nreceive a password reset code.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                    height: 1.5,
-                  ),
+                  style: TextStyle(fontSize: 16, color: subdued, height: 1.5),
                 ),
                 const SizedBox(height: 40),
 
@@ -66,15 +62,18 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
                   decoration: InputDecoration(
                     hintText: 'Email',
                     filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    fillColor: scheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                   ),
                   validator: (value) {
@@ -102,7 +101,9 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
                             }
 
                             try {
-                              await auth.forgotPassword(email: _emailController.text.trim());
+                              await auth.forgotPassword(
+                                email: _emailController.text.trim(),
+                              );
                               if (!context.mounted) {
                                 return;
                               }
@@ -118,20 +119,30 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
                                 return;
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(auth.error ?? 'Unable to send OTP')),
+                                SnackBar(
+                                  content: Text(
+                                    auth.error ?? 'Unable to send OTP',
+                                  ),
+                                ),
                               );
                             }
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D1C1), // Teal color
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: auth.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Send OTP',
-                            style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),

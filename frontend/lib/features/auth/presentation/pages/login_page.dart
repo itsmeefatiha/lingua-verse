@@ -27,7 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   // State for toggling password visibility
   bool _obscureText = true;
 
@@ -41,56 +41,61 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final onSurface = scheme.onSurface;
+    final subdued = onSurface.withOpacity(0.75);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
 
     return Scaffold(
-      backgroundColor: Colors.white, // Match white background from image
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // Align text to left
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Align text to left
               children: [
                 const SizedBox(height: 40),
                 const Text(
                   'Lets Sign you in',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Welcome Back ,\nYou have been missed',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black87,
+                    color: subdued,
                     height: 1.2,
                   ),
                 ),
                 const SizedBox(height: 50),
-                
+
                 // Email Field
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
                     hintText: 'Email',
                     filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    fillColor: scheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                   ),
-                  validator: (value) => (value == null || value.isEmpty) ? 'Required' : null,
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? 'Required' : null,
                 ),
                 const SizedBox(height: 20),
 
@@ -101,11 +106,16 @@ class _LoginPageState extends State<LoginPage> {
                   decoration: InputDecoration(
                     hintText: 'Password',
                     filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    fillColor: scheme.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscureText
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -116,26 +126,35 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black12),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                   ),
-                  validator: (value) => (value == null || value.length < 6) ? 'Min 6 chars' : null,
+                  validator: (value) => (value == null || value.length < 6)
+                      ? 'Min 6 chars'
+                      : null,
                 ),
-                
+
                 // Forgot Password Link
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ForgotPasswordEmailPage()));
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordEmailPage(),
+                        ),
+                      );
                     },
                     child: const Text(
                       'Forgot Password ?',
-                      style: TextStyle(color: Color(0xFF5AB2FF), fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: Color(0xFF5AB2FF),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -146,58 +165,82 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   height: 60,
                   child: ElevatedButton(
-                    onPressed: auth.isLoading ? null : () async {
-                      debugPrint('[Login] Sign in tapped');
-                      final isValid = _formKey.currentState?.validate() ?? false;
-                      if (!isValid) {
-                        debugPrint('[Login] Form validation failed');
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please complete email and password correctly.')),
-                          );
-                        }
-                        return;
-                      }
+                    onPressed: auth.isLoading
+                        ? null
+                        : () async {
+                            debugPrint('[Login] Sign in tapped');
+                            final isValid =
+                                _formKey.currentState?.validate() ?? false;
+                            if (!isValid) {
+                              debugPrint('[Login] Form validation failed');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Please complete email and password correctly.',
+                                    ),
+                                  ),
+                                );
+                              }
+                              return;
+                            }
 
-                      final email = _emailController.text.trim();
-                      debugPrint('[Login] Attempting API login for: $email');
-                      try {
-                        await auth.login(
-                          email: email,
-                          password: _passwordController.text,
-                        );
-                        debugPrint('[Login] Login success, role=${auth.user?.role}');
-                        if (!context.mounted) {
-                          return;
-                        }
-                        final isAdmin = auth.user?.role.toLowerCase() == 'admin';
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => isAdmin
-                                    ? const AdminShellPage()
-                                : const MainShellPage(),
-                          ),
-                          (route) => false,
-                        );
-                      } catch (e) {
-                        debugPrint('[Login] Login failed before/after API call: $e');
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(auth.error ?? 'Login failed')),
-                          );
-                        }
-                      }
-                    },
+                            final email = _emailController.text.trim();
+                            debugPrint(
+                              '[Login] Attempting API login for: $email',
+                            );
+                            try {
+                              await auth.login(
+                                email: email,
+                                password: _passwordController.text,
+                              );
+                              debugPrint(
+                                '[Login] Login success, role=${auth.user?.role}',
+                              );
+                              if (!context.mounted) {
+                                return;
+                              }
+                              final isAdmin =
+                                  auth.user?.role.toLowerCase() == 'admin';
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (_) => isAdmin
+                                      ? const AdminShellPage()
+                                      : const MainShellPage(),
+                                ),
+                                (route) => false,
+                              );
+                            } catch (e) {
+                              debugPrint(
+                                '[Login] Login failed before/after API call: $e',
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(auth.error ?? 'Login failed'),
+                                  ),
+                                );
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00D1C1), // Teal color from image
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: const Color(
+                        0xFF00D1C1,
+                      ), // Teal color from image
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: auth.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Sign in',
-                            style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),
@@ -206,12 +249,12 @@ class _LoginPageState extends State<LoginPage> {
                 // "or" Divider
                 const Row(
                   children: [
-                    Expanded(child: Divider(thickness: 1, color: Colors.black12)),
+                    Expanded(child: Divider(thickness: 1)),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('or', style: TextStyle(color: Colors.black54)),
+                      child: Text('or', style: TextStyle()),
                     ),
-                    Expanded(child: Divider(thickness: 1, color: Colors.black12)),
+                    Expanded(child: Divider(thickness: 1)),
                   ],
                 ),
                 const SizedBox(height: 30),
@@ -229,7 +272,8 @@ class _LoginPageState extends State<LoginPage> {
                               if (!context.mounted) {
                                 return;
                               }
-                              final isAdmin = auth.user?.role.toLowerCase() == 'admin';
+                              final isAdmin =
+                                  auth.user?.role.toLowerCase() == 'admin';
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(
                                   builder: (_) => isAdmin
@@ -243,28 +287,36 @@ class _LoginPageState extends State<LoginPage> {
                                 return;
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(auth.error ?? 'Google login failed')),
+                                SnackBar(
+                                  content: Text(
+                                    auth.error ?? 'Google login failed',
+                                  ),
+                                ),
                               );
                             }
                           },
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.black12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: borderColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.network(
-                          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                        Image.asset(
+                          'assets/images/image.png',
+                          width: 24,
                           height: 24,
+                          fit: BoxFit.contain,
                         ),
                         const SizedBox(width: 12),
-                        const Flexible(
+                        Flexible(
                           child: Text(
                             'Continue with Google',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.black54, fontSize: 16),
+                            style: TextStyle(color: subdued, fontSize: 16),
                           ),
                         ),
                       ],
@@ -277,16 +329,21 @@ class _LoginPageState extends State<LoginPage> {
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SignUpPage()));
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SignUpPage()),
+                      );
                     },
                     child: RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         text: "Don't have an account ? ",
-                        style: TextStyle(color: Colors.black87),
+                        style: TextStyle(color: subdued),
                         children: [
                           TextSpan(
                             text: 'Register Now',
-                            style: TextStyle(color: Color(0xFF5AB2FF), fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: scheme.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),

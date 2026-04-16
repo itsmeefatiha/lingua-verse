@@ -69,16 +69,16 @@ class LearningLevel {
       name: (json['name'] as String?)?.trim().isNotEmpty == true
           ? (json['name'] as String).trim()
           : (json['code'] as String? ?? '').trim().toUpperCase(),
-      orderIndex: (json['order_index'] as num?)?.toInt() ?? (json['display_order'] as num?)?.toInt() ?? 0,
+      orderIndex:
+          (json['order_index'] as num?)?.toInt() ??
+          (json['display_order'] as num?)?.toInt() ??
+          0,
       isCompleted: (json['is_completed'] as bool?) ?? false,
       isLocked: (json['is_locked'] as bool?) ?? true,
     );
   }
 
-  LearningLevel copyWith({
-    bool? isCompleted,
-    bool? isLocked,
-  }) {
+  LearningLevel copyWith({bool? isCompleted, bool? isLocked}) {
     return LearningLevel(
       id: id,
       languageId: languageId,
@@ -113,7 +113,10 @@ class LearningLesson {
       name: (json['name'] as String?)?.trim().isNotEmpty == true
           ? (json['name'] as String).trim()
           : (json['title'] as String? ?? 'Lesson'),
-      orderIndex: (json['order_index'] as num?)?.toInt() ?? (json['display_order'] as num?)?.toInt() ?? 0,
+      orderIndex:
+          (json['order_index'] as num?)?.toInt() ??
+          (json['display_order'] as num?)?.toInt() ??
+          0,
       isCompleted: (json['is_completed'] as bool?) ?? progress >= 1,
     );
   }
@@ -135,12 +138,14 @@ class LearningWord {
     required this.lessonId,
     required this.nativeText,
     required this.targetText,
+    required this.imageUrl,
   });
 
   final int id;
   final int lessonId;
   final String nativeText;
   final String targetText;
+  final String? imageUrl;
 
   factory LearningWord.fromApi(Map<String, dynamic> json) {
     return LearningWord(
@@ -152,6 +157,7 @@ class LearningWord {
       targetText: (json['target_text'] as String?)?.trim().isNotEmpty == true
           ? (json['target_text'] as String).trim()
           : (json['term'] as String? ?? ''),
+      imageUrl: (json['image_url'] as String?)?.trim() ?? '',
     );
   }
 }

@@ -83,7 +83,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.verifyAccount(email: email, otpCode: otpCode);
+      final token = await _repository.verifyAccount(
+        email: email,
+        otpCode: otpCode,
+      );
+      _sessionStore.setToken(token);
+      _user = await _repository.getMe();
     } catch (e) {
       _error = e.toString();
       rethrow;
@@ -201,23 +206,26 @@ class AuthProvider extends ChangeNotifier {
         );
       } else {
         await Future<void>.delayed(const Duration(milliseconds: 500));
-        _user = (_user ?? const UserProfileModel(
-          id: 0,
-          email: '',
-          fullName: '',
-          avatarUrl: '',
-          sourceLanguage: 'fr',
-          targetLanguage: 'en',
-          totalXp: 0,
-          level: 1,
-          streak: 0,
-          weeklyXp: 0,
-          currentLeague: 'bronze',
-          role: 'user',
-        )).copyWith(
-          sourceLanguage: nativeLang,
-          targetLanguage: targetLang,
-        );
+        _user =
+            (_user ??
+                    const UserProfileModel(
+                      id: 0,
+                      email: '',
+                      fullName: '',
+                      avatarUrl: '',
+                      sourceLanguage: 'fr',
+                      targetLanguage: 'en',
+                      totalXp: 0,
+                      level: 1,
+                      streak: 0,
+                      weeklyXp: 0,
+                      currentLeague: 'bronze',
+                      role: 'user',
+                    ))
+                .copyWith(
+                  sourceLanguage: nativeLang,
+                  targetLanguage: targetLang,
+                );
       }
     } catch (e) {
       _error = e.toString();

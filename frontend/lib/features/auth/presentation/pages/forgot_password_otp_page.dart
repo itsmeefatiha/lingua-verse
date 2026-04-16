@@ -16,9 +16,12 @@ class ForgotPasswordOtpPage extends StatefulWidget {
 
 class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // We need 6 controllers and 6 focus nodes for the individual boxes
-  final List<TextEditingController> _controllers = List.generate(6, (index) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
   @override
@@ -38,14 +41,12 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final subdued = scheme.onSurface.withOpacity(0.8);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      appBar: AppBar(elevation: 0),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
@@ -54,34 +55,38 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Forget Password',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 16),
                 RichText(
                   text: TextSpan(
                     text: 'Enter 6 - digits code we send you on email\n',
-                    style: const TextStyle(color: Colors.black87, fontSize: 14, height: 1.5),
+                    style: TextStyle(color: subdued, fontSize: 14, height: 1.5),
                     children: [
                       TextSpan(
                         text: widget.email,
-                        style: const TextStyle(color: Color(0xFF5AB2FF)), // Blue color
+                        style: TextStyle(color: scheme.secondary),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 40),
-                const Text(
+                Text(
                   'Enter Your OTP',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: subdued,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // 6 OTP Input Boxes
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -94,7 +99,10 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
                         focusNode: _focusNodes[index],
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                         inputFormatters: [
                           LengthLimitingTextInputFormatter(1),
                           FilteringTextInputFormatter.digitsOnly,
@@ -102,18 +110,25 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
                         decoration: InputDecoration(
                           counterText: "",
                           filled: true,
-                          fillColor: const Color(0xFFF8F9FA), // Very light grey fill
+                          fillColor: scheme.surface,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00D1C1)), // Teal border
+                            borderSide: const BorderSide(
+                              color: Color(0xFF00D1C1),
+                            ), // Teal border
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00D1C1)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF00D1C1),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF00D1C1), width: 2),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF00D1C1),
+                              width: 2,
+                            ),
                           ),
                         ),
                         onChanged: (value) {
@@ -129,7 +144,7 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
                   }),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Check OTP Button
                 SizedBox(
                   width: double.infinity,
@@ -141,7 +156,9 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
                             final otp = _currentOtp;
                             if (otp.length < 6) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Please enter all 6 digits')),
+                                const SnackBar(
+                                  content: Text('Please enter all 6 digits'),
+                                ),
                               );
                               return;
                             }
@@ -172,14 +189,20 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00D1C1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                     child: auth.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Check OTP',
-                            style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),
@@ -187,18 +210,24 @@ class _ForgotPasswordOtpPageState extends State<ForgotPasswordOtpPage> {
 
                 // Footer Text with Links
                 RichText(
-                  text: const TextSpan(
+                  text: TextSpan(
                     text: "if you don't find the OTP code that we\nsent try ",
-                    style: TextStyle(color: Colors.black87, fontSize: 13, height: 1.5),
+                    style: TextStyle(color: subdued, fontSize: 13, height: 1.5),
                     children: [
                       TextSpan(
                         text: 'Checking Spam',
-                        style: TextStyle(color: Color(0xFF5AB2FF), fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: scheme.secondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       TextSpan(text: ' or '),
                       TextSpan(
                         text: 'Send Code\nAgain',
-                        style: TextStyle(color: Color(0xFF5AB2FF), fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: scheme.secondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),

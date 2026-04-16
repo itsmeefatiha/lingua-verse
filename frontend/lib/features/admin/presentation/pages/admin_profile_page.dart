@@ -92,7 +92,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Admin Profile')),
+      appBar: AppBar(
+        title: const Text('Admin Profile'),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
@@ -143,36 +148,97 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(user.fullName, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 4),
-              Text(user.email, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.admin_panel_settings_outlined),
-                title: const Text('Role'),
-                subtitle: Text(user.role),
+              Text(
+                user.fullName, 
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: auth.isLoading ? null : () => _saveAvatar(auth),
-                  style: FilledButton.styleFrom(backgroundColor: const Color(0xFF00D1C1)),
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Save Avatar'),
+              const SizedBox(height: 4),
+              Text(
+                user.email, 
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF00D1C1)),
+                  title: const Text('Role', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(user.role.toUpperCase(), style: const TextStyle(color: Colors.black54)),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 32),
+              
+              // Save Avatar Button
               SizedBox(
                 width: double.infinity,
+                height: 56, // Matched height for a premium feel
                 child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: const Color(0xFF00D1C1)),
+                  onPressed: auth.isLoading ? null : () => _saveAvatar(auth),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: auth.isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                        )
+                      : const Text(
+                          'Save Avatar', 
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Export Stats Button (Static placeholder until backend export is wired)
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Export stats coming soon')),
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF00D1C1),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text(
+                    'Export Stats',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Logout Button (Red with Icon)
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade50, // Soft red background
+                    foregroundColor: Colors.red.shade600, // Deep red text and icon
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.red.shade200, width: 1.5),
+                    ),
+                  ),
                   onPressed: () {
                     context.read<AuthProvider>().logout();
                     Navigator.of(context).pushAndRemoveUntil(
@@ -180,7 +246,11 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                       (route) => false,
                     );
                   },
-                  child: const Text('Logout'),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text(
+                    'Logout',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],

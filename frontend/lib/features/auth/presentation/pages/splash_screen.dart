@@ -32,9 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => auth.isAuthenticated
-              ? (isAdmin
-                  ? const AdminShellPage()
-                  : const MainShellPage())
+              ? (isAdmin ? const AdminShellPage() : const MainShellPage())
               : const LoginScreen(),
         ),
       );
@@ -43,14 +41,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Center(
         child: Image.asset(
           'assets/images/logoo.png',
           width: 170,
           errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.language, size: 72, color: Colors.teal);
+            return Icon(Icons.language, size: 72, color: scheme.primary);
           },
         ),
       ),
