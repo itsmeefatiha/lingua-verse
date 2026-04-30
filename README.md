@@ -1,80 +1,39 @@
 # LinguaVerse
 
-LinguaVerse is a full-stack language learning app built with a FastAPI backend and a Flutter frontend.
+LinguaVerse is a full-stack language learning application with a FastAPI backend and a Flutter frontend.
 
-The project is designed around a simple but powerful learning loop:
-- pick a target language
-- unlock levels progressively
-- complete lessons word by word (with optional TTS)
-- pass level quizzes to unlock the next level
+This README provides a concise, project-aligned setup and the primary commands to run the app locally.
 
-It is also built to preserve progress per language, so users can switch languages without losing what they already completed.
+**Tech Stack**
+- **Backend:** FastAPI, SQLAlchemy, Alembic, PostgreSQL
+- **Frontend:** Flutter
 
----
-
-## Tech Stack
-
-### Backend
-- FastAPI
-- SQLAlchemy
-- Alembic
-- PostgreSQL
-- Uvicorn
-
-### Frontend
-- Flutter
-- Provider
-- HTTP client
-- flutter_tts (mobile/desktop)
-
----
-
-## Project Structure
-
-- `backend/` API, database models, migrations, services
-- `frontend/` Flutter app
-- `backend/sql/seed_learning_engine.sql` sample data for testing learning flow
-
----
-
-## Prerequisites
-
-Before running the project, make sure you have:
-- Python 3.11+ (project can also run on 3.13 as in your setup)
+**Prerequisites**
+- Python 3.11+
 - PostgreSQL
 - Flutter SDK
-- Android Studio + Android SDK (for Android runs)
-- Git
 
-Optional but recommended:
-- VS Code with Flutter and Python extensions
-
----
-
-## 1) Backend Setup
-
-From project root:
+**Quick Start — Backend**
+1. From the project root, open a terminal and change to the backend folder:
 
 ```bash
 cd backend
 ```
 
-Create and activate a virtual environment (Windows PowerShell):
+2. Create and activate a virtual environment (PowerShell example):
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-Install dependencies:
+3. Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Create `.env`
-
-Create `backend/.env` with your local values:
+4. Create `backend/.env` with your local settings. Minimal example:
 
 ```env
 SECRET_KEY=change_me
@@ -86,173 +45,58 @@ POSTGRES_PASSWORD=postgres
 POSTGRES_SERVER=127.0.0.1
 POSTGRES_PORT=5432
 POSTGRES_DB=linguaverse
-
-SMTP_SERVER=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=test@example.com
-SMTP_PASSWORD=test
-
-TTS_ENGINE=mock
-TTS_DEFAULT_LANG=en
-TTS_STORAGE_BASE_URL=https://storage.linguaverse.local/audio
-TTS_OUTPUT_DIR=generated_audio
-
-STT_ENGINE=simulated
 ```
 
-### Run migrations
+5. Run database migrations:
 
 ```bash
 python -m alembic upgrade head
 ```
 
-### Seed learning data
+6. (Optional) Seed sample data:
 
 ```bash
 psql -d linguaverse -f sql/seed_learning_engine.sql
 ```
 
-### Start backend server
+7. Start the backend server (from the `backend` directory):
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-API should be available at:
-- `http://127.0.0.1:8000`
-- Swagger docs: `http://127.0.0.1:8000/docs`
+The API will be reachable on http://0.0.0.0:8000 and the OpenAPI docs at http://0.0.0.0:8000/docs
 
----
-
-## 2) Frontend Setup
-
-From project root:
+**Quick Start — Frontend**
+1. From project root, open a terminal and change to the frontend folder:
 
 ```bash
 cd frontend
 flutter pub get
 ```
 
-The frontend reads backend URL from a Dart define (`API_BASE_URL`) and falls back to:
-- `http://127.0.0.1:8000/api/v1`
+2. Main command to run the Flutter app (replace `<LOCAL_ADDRESS>` or add additional Dart defines as needed):
 
-For reliable local testing, pass it explicitly.
+```bash
+flutter run --dart-define=API_BASE_URL=http://<LOCAL_ADDRESS>:8000/api/v1 --dart-define=OTHER_DEFINE=...
+```
+
+- For local web testing you can use `http://127.0.0.1:8000/api/v1`.
+- For Android emulator use `http://10.0.2.2:8000/api/v1` when running on the Android emulator.
+
+**Primary Commands (copyable)**
+- Backend: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload` (run from `backend`)
+- Frontend: `flutter run --dart-define=API_BASE_URL=http://<LOCAL_ADDRESS>:8000/api/v1 --dart-define=...`
+
+If you want, I can replace `<LOCAL_ADDRESS>` with concrete examples for web, emulator, or a connected device.
+
+**Notes**
+- The frontend reads the API URL from the `API_BASE_URL` Dart define. Passing it explicitly is recommended for local testing.
+- Keep `TTS`/`STT` settings and other environment values in `backend/.env`.
+
+If you'd like I can also:
+- Add a one-line `Makefile` or PowerShell script for these commands
+- Replace the `<LOCAL_ADDRESS>` placeholders with exact examples for web, emulator and device
 
 ---
 
-## 3) Run Frontend (Web)
-
-```bash
-flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
-```
-
-Notes:
-- `flutter_tts` is not fully implemented for web platforms.
-- The lesson player is coded to continue in text-only mode when TTS is unavailable.
-
----
-
-## 4) Run Frontend (Android)
-
-### A) Android Emulator
-
-Use Android emulator loopback URL:
-
-```bash
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
-```
-
-### B) Real Android Device (USB)
-
-Option 1: use your PC LAN IP
-
-```bash
-flutter run --dart-define=API_BASE_URL=http://<YOUR_PC_IP>:8000/api/v1
-```
-
-Option 2: use USB reverse (recommended for local testing)
-
-```bash
-adb reverse tcp:8000 tcp:8000
-flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
-```
-
----
-
-## 5) Learning Engine Flow (What to Test)
-
-After seeding:
-1. Log in and open learning dashboard
-2. Pick a target language
-3. Open level A1
-4. Complete all A1 lessons
-5. Take A1 quiz and pass (>= 80)
-6. Confirm A2 unlocks
-7. Switch to another language and confirm prior language progress is preserved
-
----
-
-## Common Issues and Fixes
-
-### 1) `questions.choices does not exist`
-Cause:
-- backend code expects `questions.choices` but DB schema is not migrated.
-
-Fix:
-```bash
-cd backend
-python -m alembic upgrade head
-```
-
-### 2) `MissingPluginException` with `flutter_tts`
-Cause:
-- running on web where plugin method is not implemented.
-
-Fix:
-- use Android/iOS for full TTS, or continue on web in text-only mode.
-
-### 3) `alembic` command not found
-Fix:
-```bash
-cd backend
-python -m alembic upgrade head
-```
-
-### 4) Frontend cannot reach backend on Android
-Fix:
-- emulator: use `10.0.2.2`
-- real device: use LAN IP or `adb reverse`
-
----
-
-## Handy Commands
-
-Backend:
-
-```bash
-cd backend
-python -m alembic upgrade head
-uvicorn app.main:app --reload
-```
-
-Frontend web:
-
-```bash
-cd frontend
-flutter pub get
-flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
-```
-
-Frontend android emulator:
-
-```bash
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
-```
-
----
-
-## Final Notes
-
-This repo is actively evolving. If something feels off while testing, run migrations first, then re-seed data, then restart backend and frontend.
-
-If you want, a Docker setup can be added next (Postgres + API + Flutter web) to make onboarding one-command for new contributors.

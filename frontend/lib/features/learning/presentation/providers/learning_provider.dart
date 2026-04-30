@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/storage/database_helper.dart';
 import '../../data/models/catalog_models.dart';
 import '../../data/models/learning_engine_models.dart';
 import '../../data/models/quiz_models.dart';
@@ -9,6 +10,7 @@ class LearningProvider extends ChangeNotifier {
   LearningProvider(this._repository);
 
   final LearningRepository _repository;
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   List<LearningLanguage> _languages = const [];
   String? _activeLanguageCode;
@@ -91,24 +93,150 @@ class LearningProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final levels = await _repository.fetchLevelsForLanguage(code, languageId: language.id);
+      // OFFLINE-FIRST: Load cached levels immediately
+      await _loadLevelsFromCache(code, language);
+
+      // BACKGROUND FETCH: Try to fetch fresh data from API
+      _fetchLevelsFromApiInBackground(code, language);
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoadingCatalog = false;
+      notifyListeners();
+    }
+  }
+
+  /// Load levels from local SQLite cache and update state
+  Future<void> _loadLevelsFromCache(String languageCode, LearningLanguage language) async {
+    if (language.id == 0) {
+      return; // Language not in the system yet
+    }
+
+    try {
+      final cachedLevels = await _dbHelper.getCachedLevels(language.id);
+      if (cachedLevels.isEmpty) {
+        return; // No cache available
+      }
+
+      // Convert cached data to LearningLevel objects
+      final levels = cachedLevels.map((levelData) {
+        return LearningLevel(
+          id: (levelData['id'] as int?) ?? 0,
+          languageId: language.id,
+          name: (levelData['name'] as String?) ?? (levelData['code'] as String?) ?? '',
+          orderIndex: (levelData['display_order'] as int?) ?? 0,
+          isCompleted: ((levelData['is_completed'] as int?) ?? 0) == 1,
+          isLocked: ((levelData['is_locked'] as int?) ?? 1) == 1,
+        );
+      }).toList();
+
+      // Load lessons for each level from cache
+      final lessonsByLevel = <int, List<LearningLesson>>{};
+      for (final level in levels) {
+        final cachedLessons = await _dbHelper.getCachedLessons(level.id);
+        lessonsByLevel[level.id] = cachedLessons.map((lessonData) {
+          return LearningLesson(
+            id: (lessonData['id'] as int?) ?? 0,
+            levelId: level.id,
+            name: (lessonData['title'] as String?) ?? '',
+            orderIndex: (lessonData['display_order'] as int?) ?? 0,
+            isCompleted: ((lessonData['is_completed'] as int?) ?? 0) == 1,
+          );
+        }).toList();
+      }
+
+      // Update state with cached data
+      _activeLanguageCode = languageCode;
+      _levelsByLanguage[languageCode] = levels;
+      _lessonsByLevel.addAll(lessonsByLevel);
+
+      final completedLessonIds = <int>{};
+      for (final lessons in lessonsByLevel.values) {
+        for (final lesson in lessons) {
+          if (lesson.isCompleted) {
+            completedLessonIds.add(lesson.id);
+          }
+        }
+      }
+      _completedLessonIdsByLanguage[languageCode] = completedLessonIds;
+
+      final passedLevelIds = <int>{};
+      for (final level in levels) {
+        if (level.isCompleted) {
+          passedLevelIds.add(level.id);
+        }
+      }
+      _passedLevelIdsByLanguage[languageCode] = passedLevelIds;
+
+      notifyListeners();
+    } catch (e) {
+      // Silently ignore cache loading errors
+      debugPrint('Error loading levels from cache: $e');
+    }
+  }
+
+  /// Fetch fresh data from API in background and update cache
+  Future<void> _fetchLevelsFromApiInBackground(
+    String languageCode,
+    LearningLanguage language,
+  ) async {
+    try {
+      // Fetch fresh levels from API
+      final apiLevels = await _repository.fetchLevelsForLanguage(
+        languageCode,
+        languageId: language.id,
+      );
+
+      // Cache the levels
+      final levelsForDb = apiLevels
+          .map((level) => {
+                'id': level.id,
+                'name': level.name,
+                'code': level.name.toUpperCase(),
+                'language_id': level.languageId,
+                'display_order': level.orderIndex,
+                'is_completed': level.isCompleted,
+                'is_locked': level.isLocked,
+              })
+          .toList();
+      await _dbHelper.upsertLevels(levelsForDb);
+
+      // Fetch lessons for each level
       final completionMap = await _repository.fetchLessonCompletionMap();
       final passedLevelCodes = await _repository.fetchPassedLevelCodes();
 
       final lessonsByLevel = <int, List<LearningLesson>>{};
-      for (final level in levels) {
-        final lessons = await _repository.fetchLessonsForLevel(
+      for (final level in apiLevels) {
+        final apiLessons = await _repository.fetchLessonsForLevel(
           levelId: level.id,
           levelName: level.name,
-          languageCode: code,
+          languageCode: languageCode,
         );
-        final hydrated = lessons
-            .map((lesson) => lesson.copyWith(isCompleted: completionMap[lesson.id] ?? lesson.isCompleted))
+
+        // Cache the lessons
+        final lessonsForDb = apiLessons
+            .map((lesson) => {
+                  'id': lesson.id,
+                  'title': lesson.name,
+                  'level_id': level.id,
+                  'display_order': lesson.orderIndex,
+                  'is_completed': lesson.isCompleted,
+                })
+            .toList();
+        await _dbHelper.upsertLessons(lessonsForDb);
+
+        final hydrated = apiLessons
+            .map(
+              (lesson) => lesson.copyWith(
+                isCompleted: completionMap[lesson.id] ?? lesson.isCompleted,
+              ),
+            )
             .toList();
         lessonsByLevel[level.id] = hydrated;
       }
 
-      final sorted = [...levels]..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+      // Build gated levels (same logic as before)
+      final sorted = [...apiLevels]..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
       final gated = <LearningLevel>[];
 
       for (var index = 0; index < sorted.length; index++) {
@@ -135,11 +263,18 @@ class LearningProvider extends ChangeNotifier {
         );
       }
 
-      _activeLanguageCode = code;
-      _levelsByLanguage[code] = gated;
+      // Update cache with lock/completion status
+      for (final level in gated) {
+        await _dbHelper.updateLevelCompletion(level.id, level.isCompleted);
+        await _dbHelper.updateLevelLockStatus(level.id, level.isLocked);
+      }
+
+      // Update state with fresh API data
+      _activeLanguageCode = languageCode;
+      _levelsByLanguage[languageCode] = gated;
       _lessonsByLevel.addAll(lessonsByLevel);
 
-      _completedLessonIdsByLanguage[code] = completionMap.entries
+      _completedLessonIdsByLanguage[languageCode] = completionMap.entries
           .where((entry) => entry.value)
           .map((entry) => entry.key)
           .toSet();
@@ -150,11 +285,13 @@ class LearningProvider extends ChangeNotifier {
           passedIds.add(level.id);
         }
       }
-      _passedLevelIdsByLanguage[code] = passedIds;
+      _passedLevelIdsByLanguage[languageCode] = passedIds;
+
+      notifyListeners();
     } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoadingCatalog = false;
+      // Silently catch API errors - user already has cached data on screen
+      debugPrint('Error fetching levels from API in background: $e');
+      _error = null; // Don't show error since we have cached data
       notifyListeners();
     }
   }
@@ -179,21 +316,148 @@ class LearningProvider extends ChangeNotifier {
       return;
     }
 
-    final completionMap = await _repository.fetchLessonCompletionMap();
-    final lessons = await _repository.fetchLessonsForLevel(
-      levelId: levelId,
-      levelName: level.name,
-      languageCode: code,
-    );
-    _lessonsByLevel[levelId] = lessons
-        .map((lesson) => lesson.copyWith(isCompleted: completionMap[lesson.id] ?? lesson.isCompleted))
-        .toList();
-    notifyListeners();
+    try {
+      // OFFLINE-FIRST: Load cached lessons immediately
+      await _loadLessonsFromCache(levelId);
+
+      // BACKGROUND FETCH: Try to fetch fresh data from API
+      _fetchLessonsFromApiInBackground(levelId, level, code);
+    } catch (e) {
+      debugPrint('Error fetching lessons for level: $e');
+    }
+  }
+
+  /// Load lessons from local SQLite cache for a level
+  Future<void> _loadLessonsFromCache(int levelId) async {
+    try {
+      final cachedLessons = await _dbHelper.getCachedLessons(levelId);
+      if (cachedLessons.isEmpty) {
+        return; // No cache available
+      }
+
+      final lessons = cachedLessons.map((lessonData) {
+        return LearningLesson(
+          id: (lessonData['id'] as int?) ?? 0,
+          levelId: levelId,
+          name: (lessonData['title'] as String?) ?? '',
+          orderIndex: (lessonData['display_order'] as int?) ?? 0,
+          isCompleted: ((lessonData['is_completed'] as int?) ?? 0) == 1,
+        );
+      }).toList();
+
+      _lessonsByLevel[levelId] = lessons;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading lessons from cache: $e');
+    }
+  }
+
+  /// Fetch fresh lessons from API in background and update cache
+  Future<void> _fetchLessonsFromApiInBackground(
+    int levelId,
+    LearningLevel level,
+    String languageCode,
+  ) async {
+    try {
+      final completionMap = await _repository.fetchLessonCompletionMap();
+      final apiLessons = await _repository.fetchLessonsForLevel(
+        levelId: levelId,
+        levelName: level.name,
+        languageCode: languageCode,
+      );
+
+      // Cache the lessons
+      final lessonsForDb = apiLessons
+          .map((lesson) => {
+                'id': lesson.id,
+                'title': lesson.name,
+                'level_id': levelId,
+                'display_order': lesson.orderIndex,
+                'is_completed': lesson.isCompleted,
+              })
+          .toList();
+      await _dbHelper.upsertLessons(lessonsForDb);
+
+      // Update state with fresh data
+      final hydrated = apiLessons
+          .map(
+            (lesson) => lesson.copyWith(
+              isCompleted: completionMap[lesson.id] ?? lesson.isCompleted,
+            ),
+          )
+          .toList();
+      _lessonsByLevel[levelId] = hydrated;
+      notifyListeners();
+    } catch (e) {
+      // Silently catch API errors - user already has cached data on screen
+      debugPrint('Error fetching lessons from API in background: $e');
+    }
   }
 
   Future<void> fetchWordsForLesson(int lessonId) async {
-    _wordsByLesson[lessonId] = await _repository.fetchWordsForLesson(lessonId);
-    notifyListeners();
+    try {
+      // OFFLINE-FIRST: Load cached words immediately
+      await _loadWordsFromCache(lessonId);
+
+      // BACKGROUND FETCH: Try to fetch fresh data from API
+      _fetchWordsFromApiInBackground(lessonId);
+    } catch (e) {
+      debugPrint('Error fetching words for lesson: $e');
+    }
+  }
+
+  /// Load words from local SQLite cache for a lesson
+  Future<void> _loadWordsFromCache(int lessonId) async {
+    try {
+      final cachedWords = await _dbHelper.getCachedWords(lessonId);
+      if (cachedWords.isEmpty) {
+        return; // No cache available
+      }
+
+      final words = cachedWords.map((wordData) {
+        return LearningWord(
+          id: (wordData['id'] as int?) ?? 0,
+          lessonId: lessonId,
+          nativeText: (wordData['native_text'] as String?) ?? '',
+          targetText: (wordData['target_text'] as String?) ?? '',
+          imageUrl: (wordData['image_url'] as String?)?.isEmpty == true ? null : wordData['image_url'],
+        );
+      }).toList();
+
+      _wordsByLesson[lessonId] = words;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading words from cache: $e');
+    }
+  }
+
+  /// Fetch fresh words from API in background and update cache
+  Future<void> _fetchWordsFromApiInBackground(int lessonId) async {
+    try {
+      final apiWords = await _repository.fetchWordsForLesson(lessonId);
+
+      // Cache the words
+      final wordsForDb = apiWords
+          .map((word) => {
+                'id': word.id,
+                'lesson_id': lessonId,
+                'native_text': word.nativeText,
+                'target_text': word.targetText,
+                'image_url': word.imageUrl ?? '',
+                'audio_url': '',
+                'category': 'general',
+                'example': '',
+              })
+          .toList();
+      await _dbHelper.upsertWords(wordsForDb);
+
+      // Update state with fresh data
+      _wordsByLesson[lessonId] = apiWords;
+      notifyListeners();
+    } catch (e) {
+      // Silently catch API errors - user already has cached data on screen
+      debugPrint('Error fetching words from API in background: $e');
+    }
   }
 
   Future<void> loadPreviousWrongAnswers({required String levelCode}) async {
